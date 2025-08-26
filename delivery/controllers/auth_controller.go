@@ -8,8 +8,16 @@ import (
 	"github.com/tsigemariamzewdu/JobMate-backend/domain"
 )
 
+// AuthController handles HTTP requests related to authentication.
 type AuthController struct {
 	AuthUsecase domain.IAuthUsecase
+}
+
+// NewAuthController creates a new instance of AuthController with its dependencies.
+func NewAuthController(authUsecase domain.IAuthUsecase) *AuthController {
+	return &AuthController{
+		AuthUsecase: authUsecase,
+	}
 }
 
 // RefreshToken is an HTTP handler that handles the token refreshing endpoint.
@@ -45,14 +53,14 @@ func (au *AuthController) RefreshToken(c *gin.Context) {
 		Value:    *newRefreshToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true, // Should be true in production
+		Secure:   true, 
 		SameSite: http.SameSiteLaxMode,
-		MaxAge: int((60 * 24 * time.Hour).Seconds()),
+		MaxAge:   int((60 * 24 * time.Hour).Seconds()),
 	})
 
 	// Return a success response to the client.
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Token refreshed successfully",
+		"message":    "Token refreshed successfully",
 		"expires_in": int(expiresIn.Seconds()),
 	})
 }
