@@ -1,4 +1,4 @@
-package models
+package domain
 
 import "time"
 
@@ -43,4 +43,7 @@ type User struct {
 	// LastActiveAt      time.Time
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
+}
+type IEmailService interface {
+    SendEmail(to, subject, body string) error
 }
