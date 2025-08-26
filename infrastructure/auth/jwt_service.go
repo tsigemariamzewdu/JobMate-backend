@@ -41,7 +41,7 @@ func (j *JWTService) GenerateAccessToken(userID string, preferredLanguage string
 func (j *JWTService) GenerateRefreshToken(userID string) (string, error) {
 	claims := jwt.MapClaims{
 		"sub": userID,
-		"exp": time.Now().Add(7 * 24 * time.Hour).Unix(),
+		"exp": time.Now().Add(60 * 24 * time.Hour).Unix(),
 		"iat": time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
