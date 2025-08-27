@@ -6,12 +6,12 @@ import (
 )
 
 type RefreshToken struct {
-    ID        string    
-    UserID    string  
-    TokenHash string    
-    IsRevoked bool      
-    ExpiresAt time.Time 
-    CreatedAt time.Time 
+	ID        	*string    
+	UserID    	*string  
+	TokenHash 	*string    
+	IsRevoked 	bool      
+	ExpiresAt 	time.Time 
+	CreatedAt 	time.Time 
 }
 
 // IAuthUsecase defines the business logic for authentication operations.

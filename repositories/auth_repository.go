@@ -6,11 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"github.com/tsigemariamzewdu/JobMate-backend/domain"
 	"github.com/tsigemariamzewdu/JobMate-backend/repositories/models"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // AuthRepository handles MongoDB operations for authentication.
@@ -88,10 +87,13 @@ func (r *AuthRepository) FindRefreshToken(ctx context.Context, refreshToken stri
 	}
 
 	// Convert the repository model to the domain entity.
+	id := model.ID.Hex()
+	userID := model.UserID
+	tokenHash := model.TokenHash
 	domainEntity := &domain.RefreshToken{
-		ID:        model.ID.Hex(), // Convert MongoDB's ObjectID to string
-		UserID:    model.UserID,
-		TokenHash: model.TokenHash,
+		ID:        &id,
+		UserID:    &userID,
+		TokenHash: &tokenHash,
 		IsRevoked: model.IsRevoked,
 		ExpiresAt: model.ExpiresAt,
 		CreatedAt: model.CreatedAt,
