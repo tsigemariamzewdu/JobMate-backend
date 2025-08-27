@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // PreferredLanguage enum
 type PreferredLanguage string
@@ -46,4 +49,15 @@ type User struct {
 }
 type IEmailService interface {
     SendEmail(to, subject, body string) error
+}
+
+type IUserRepository interface {
+	// GetProfile(ctx context.Context) (*User, error)
+	UpdateProfile(ctx context.Context, user *User) (*User, error)
+	GetByID(ctx context.Context, id string) (*User, error)
+}
+
+type IUserUsecase interface {
+	UpdateProfile(ctx context.Context, user *User) (*User, error)
+	GetProfile(ctx context.Context, userID string) (*User, error)
 }
