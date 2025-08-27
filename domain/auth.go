@@ -5,6 +5,15 @@ import (
 	"time"
 )
 
+type RefreshToken struct {
+    ID        string    
+    UserID    string  
+    TokenHash string    
+    IsRevoked bool      
+    ExpiresAt time.Time 
+    CreatedAt time.Time 
+}
+
 // IAuthUsecase defines the business logic for authentication operations.
 type IAuthUsecase interface {
 	// RefreshToken validates the provided refresh token, invalidates it,
@@ -27,4 +36,16 @@ type IJWTService interface {
 
 	// ValidateRefreshToken validates the refresh token's signature.
 	ValidateRefreshToken(tokenString string) (userID string, err error)
+}
+
+// IAuthRepository defines the contract for authentication-related database operations.
+type IAuthRepository interface {
+	// SaveRefreshToken securely stores a new refresh token hash in the database.
+	SaveRefreshToken(ctx context.Context, userID string, refreshToken string) error
+
+	// Finds a refresh token by its hash and, if valid, marks it as revoked.
+	FindAndInvalidate(ctx context.Context, userID string, refreshToken string) error
+
+	// FindRefreshToken finds a refresh token by its hash without invalidating it.
+	FindRefreshToken(ctx context.Context, refreshToken string) (*RefreshToken, error)
 }
