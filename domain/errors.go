@@ -14,3 +14,4 @@ var (
 	ErrUserNotFound            = errors.New("user not found")
 	ErrDatabaseOperationFailed = errors.New("database operation failed")
 )
+
