@@ -51,16 +51,3 @@ func (r *userRepository) UpdateProfile(ctx context.Context, user *domain.User) (
 	}
 	return &updatedUser, nil
 }
-
-// FindByID returns a user by their ID
-func (r *userRepository) FindByID(ctx context.Context, userID string) (*domain.User, error) {
-	var user domain.User
-	filter := bson.M{"user_id": userID}
-	if err := r.userCollection.FindOne(ctx, filter).Decode(&user); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, domain.ErrUserNotFound
-		}
-		return nil, err
-	}
-	return &user, nil
-}

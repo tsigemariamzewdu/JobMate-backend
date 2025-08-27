@@ -34,7 +34,7 @@ func (uc *AuthUseCase) RefreshToken(ctx context.Context, refreshToken string) (*
 	}
 
 	// Fetch user data (preferred language) from the main user table
-	user, err := uc.UserRepo.FindByID(ctx, userID)
+	user, err := uc.UserRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, nil, 0, fmt.Errorf("user not found: %w", domain.ErrUserNotFound)
 	}
