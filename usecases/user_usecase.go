@@ -13,6 +13,7 @@ type UserUsecase struct {
 	contextTimeout time.Duration
 }
 
+
 func NewUserUseCase(userRepo domain.IUserRepository, timeout time.Duration) domain.IUserUsecase {
 	return &UserUsecase{
 		userRepository: userRepo,
@@ -83,3 +84,4 @@ func (uc *UserUsecase) UpdateProfile(ctx context.Context, user *domain.User) (*d
 
 	return updated, nil
 }
+

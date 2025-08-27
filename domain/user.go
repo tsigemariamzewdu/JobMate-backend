@@ -48,7 +48,7 @@ type User struct {
 	UpdatedAt         time.Time
 }
 type IEmailService interface {
-    SendEmail(to, subject, body string) error
+	SendEmail(to, subject, body string) error
 }
 
 type IUserRepository interface {
