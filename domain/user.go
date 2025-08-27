@@ -48,13 +48,15 @@ type User struct {
 	UpdatedAt         time.Time
 }
 type IEmailService interface {
-    SendEmail(to, subject, body string) error
+	SendEmail(to, subject, body string) error
 }
 
 type IUserRepository interface {
 	// GetProfile(ctx context.Context) (*User, error)
 	UpdateProfile(ctx context.Context, user *User) (*User, error)
 	GetByID(ctx context.Context, id string) (*User, error)
+	// FindByID returns a user by their ID
+	FindByID(ctx context.Context, userID string) (*User, error)
 }
 
 type IUserUsecase interface {

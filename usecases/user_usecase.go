@@ -13,6 +13,7 @@ type UserUsecase struct {
 	contextTimeout time.Duration
 }
 
+
 func NewUserUseCase(userRepo domain.IUserRepository, timeout time.Duration) domain.IUserUsecase {
 	return &UserUsecase{
 		userRepository: userRepo,
@@ -82,4 +83,15 @@ func (uc *UserUsecase) UpdateProfile(ctx context.Context, user *domain.User) (*d
 	}
 
 	return updated, nil
+}
+
+func (uc *UserUsecase) FindByID(ctx context.Context, userID string) (*domain.User, error) {
+	user, err := uc.userRepository.GetByID(ctx, userID)
+	if err != nil {
+		if err == domain.ErrUserNotFound {
+			return nil, domain.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("failed to fetch user: %w", err)
+	}
+	return user, nil
 }
