@@ -1,24 +1,16 @@
-package routes
+package routers
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/tsigemariamzewdu/JobMate-backend/delivery/controllers"
-	"github.com/tsigemariamzewdu/JobMate-backend/infrastructure/auth"
+
+	"github.com/gin-gonic/gin"
 )
 
-
-func SetupRouter(authMiddleware *auth.AuthMiddleware, uc *controllers.UserController) *gin.Engine {
+func SetupRouter(authController *controllers.AuthController)  *gin.Engine{
 	router := gin.Default()
-
-	registerUserRoutes(router, authMiddleware, uc)
-
-	return router
-}
-
-func registerUserRoutes(router *gin.Engine, authMiddleware *auth.AuthMiddleware, uc *controllers.UserController) {
-	userRoutes := router.Group("/users", authMiddleware.Middleware())
+	authRoutes :=router.Group("/auth")
 	{
-		userRoutes.GET("/me", uc.GetProfile)
-		userRoutes.POST("/me", uc.UpdateProfile)
-	}
+		authRoutes.POST("/request-otp", authController.RequestOTP)
+	}	
+	return router
 }
