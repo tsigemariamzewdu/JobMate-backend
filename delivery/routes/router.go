@@ -1,4 +1,4 @@
-package routes
+package routers
 
 import (
 	"github.com/gin-gonic/gin"
@@ -10,8 +10,18 @@ import (
 func SetupRouter(authMiddleware *auth.AuthMiddleware, uc *controllers.UserController, authUC domain.IAuthUsecase) *gin.Engine {
 	router := gin.Default()
 
+	// auth controller from domain usecase
 	authController := controllers.NewAuthController(authUC)
+
+	// register user + auth routes
 	registerUserRoutes(router, authMiddleware, uc, authController)
+
+	// add OTP route 
+	authRoutes := router.Group("/auth")
+	{
+		authRoutes.POST("/request-otp", authController.RequestOTP)
+	}
+
 	return router
 }
 
@@ -22,6 +32,6 @@ func registerUserRoutes(router *gin.Engine, authMiddleware *auth.AuthMiddleware,
 		userRoutes.POST("/me", uc.UpdateProfile)
 	}
 	
-	//auth routes
+	// refresh token
 	router.POST("/auth/refresh", authController.RefreshToken)
 }
