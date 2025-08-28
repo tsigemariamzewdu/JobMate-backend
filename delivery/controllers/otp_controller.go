@@ -12,16 +12,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type AuthController struct {
-    AuthUsecase *usecases.AuthUsecase
+type OtpController struct {
+    AuthUsecase *usecases.OTPUsecase
 }
 
-func NewAuthController(authUsecase *usecases.AuthUsecase) *AuthController {
-    return &AuthController{AuthUsecase: authUsecase}
+func NewOtpController(authUsecase *usecases.OTPUsecase) *OtpController {
+    return &OtpController{AuthUsecase: authUsecase}
 }
 
 // POST /auth/request-otp
-func (c *AuthController) RequestOTP(ctx *gin.Context) {
+func (c *OtpController) RequestOTP(ctx *gin.Context) {
     var req dto.OTPRequestDTO
     if err := ctx.ShouldBindJSON(&req); err != nil {
         ctx.JSON(http.StatusBadRequest, dto.OTPResponseDTO{Message: "Invalid request"})
@@ -31,10 +31,10 @@ func (c *AuthController) RequestOTP(ctx *gin.Context) {
     ip := ctx.ClientIP()
     otpReq := dtoToDomainOTPRequest(req, ip)
     if err := c.AuthUsecase.RequestOTP(context.Background(), &otpReq); err != nil {
-    // log it but don’t expose to client
-    fmt.Printf("failed to send OTP: %v\n", err)
-}
-ctx.JSON(http.StatusOK, dto.OTPResponseDTO{Message: "If this phone exists, a code was sent"})
+        // log it but don’t expose to client
+        fmt.Printf("failed to send OTP: %v\n", err)
+    }
+    ctx.JSON(http.StatusOK, dto.OTPResponseDTO{Message: "If this phone exists, a code was sent"})
 
 }
 

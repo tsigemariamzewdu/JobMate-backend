@@ -36,6 +36,7 @@ type User struct {
 	PreferredLanguage *PreferredLanguage
 	EducationLevel    *EducationLevel
 	FieldOfStudy      *string
+	Password          *string
 	PasswordHash      *string
 	YearsExperience   *int
 	CareerInterests   *string
@@ -46,6 +47,8 @@ type User struct {
 	// LastActiveAt      time.Time
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
+
+	Provider          string
 }
 type IEmailService interface {
 	SendEmail(to, subject, body string) error
