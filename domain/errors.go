@@ -2,7 +2,6 @@ package domain
 
 import "errors"
 
-
 var (
 	// Token-related errors
 	ErrInvalidInput            = errors.New("invalid input")
@@ -20,11 +19,11 @@ var (
 	ErrUpdatingDocument    = errors.New("failed to update document")
 	ErrDeletingDocument    = errors.New("failed to delete document")
 	ErrCursorIteration     = errors.New("database cursor iteration error")
-	
+
 	// User related errors
-	ErrInvalidUserID       = errors.New("user_id is required")
-	ErrUserNotFound            = errors.New("user not found")
-	ErrDatabaseOperationFailed = errors.New("database operation failed")
+	ErrInvalidUserID                    = errors.New("user_id is required")
+	ErrUserNotFound                     = errors.New("user not found")
+	ErrDatabaseOperationFailed          = errors.New("database operation failed")
 	ErrInvalidToken                     = errors.New("invalid token")
 	ErrTokenRevocationFailed            = errors.New("token revocation failed")
 	ErrInvalidEmailFormat               = errors.New("invalid email format")
@@ -43,6 +42,10 @@ var (
 	ErrGetTokenExpiryFailed             = errors.New("failed to get token expiration time")
 	ErrWeakPassword                     = errors.New("password is too weak")
 	ErrInvalidOAuthUserData             = errors.New("invalid OAuth user data")
-	ErrOAuthProviderMismatch             = errors.New("OAuth provider mismatch for this account")
-)
+	ErrOAuthProviderMismatch            = errors.New("OAuth provider mismatch for this account")
 
+	// Cv-related errors
+
+	ErrCVNotFound  = errors.New("cv not found")
+	ErrInvalidCVID = errors.New("invalid cv id")
+)
