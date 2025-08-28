@@ -31,6 +31,10 @@ func SetupRouter(authMiddleware *auth.AuthMiddleware,
 
 	RegisterOAuthRoutes(router, oauthController)
 
+	//cv routes
+	cvGroup:=router.Group("/cv")
+	NewCVRouter(*cvController,*cvGroup)
+
 	return router
 }
 
@@ -53,9 +57,9 @@ func NewAuthRouter(authController controllers.AuthController, group gin.RouterGr
 	group.POST("/logout", authController.Logout)
 }
 
-func CVRouter(cvController controllers.CVController,group gin.RouterGroup){
-	group.POST("/cv",cvController.UploadCV)
-	group.POST("/cv/:id/analye",cvController.AnalyzeCV)
+func NewCVRouter(cvController controllers.CVController,group gin.RouterGroup){
+	group.POST("/",cvController.UploadCV)
+	group.POST("/:id/analye",cvController.AnalyzeCV)
 }
 
 func RegisterOAuthRoutes(
