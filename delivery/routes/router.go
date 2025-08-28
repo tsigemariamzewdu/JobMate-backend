@@ -44,11 +44,17 @@ func registerUserRoutes(router *gin.Engine, authMiddleware *auth.AuthMiddleware,
 	router.POST("/auth/refresh", authController.RefreshToken)
 }
 
+
 func NewAuthRouter(authController controllers.AuthController, group gin.RouterGroup) {
 
 	group.POST("/register", authController.Register)
 	group.POST("/login", authController.Login)
 	group.POST("/logout", authController.Logout)
+}
+
+func CVRouter(cvController controllers.CVController,group gin.RouterGroup){
+	group.POST("/cv",cvController.UploadCV)
+	group.POST("/cv/:id/analye",cvController.AnalyzeCV)
 }
 
 func RegisterOAuthRoutes(

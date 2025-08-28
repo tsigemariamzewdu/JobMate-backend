@@ -29,12 +29,13 @@ func (c *CVController) UploadCV(ctx *gin.Context) {
 	contentType := ctx.ContentType()
 	var req CVUploadRequest
 
-	if contentType == "application/json" {
+	switch contentType {
+case "application/json":
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON body"})
 			return
 		}
-	} else if contentType == "multipart/form-data" {
+	case "multipart/form-data":
 		file, err := ctx.FormFile("file")
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
@@ -47,7 +48,7 @@ func (c *CVController) UploadCV(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "userId is required"})
 			return
 		}
-	} else {
+	default:
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "unsupported content type"})
 		return
 	}
