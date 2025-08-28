@@ -59,7 +59,7 @@ func NewAuthRouter(authController controllers.AuthController, group gin.RouterGr
 
 func NewCVRouter(cvController controllers.CVController,group gin.RouterGroup){
 	group.POST("/",cvController.UploadCV)
-	group.POST("/:id/analye",cvController.AnalyzeCV)
+	group.POST("/:id/analyze",cvController.AnalyzeCV)
 }
 
 func RegisterOAuthRoutes(
