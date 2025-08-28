@@ -72,7 +72,7 @@ func main() {
 	// Initialize use case
 	otpUsecase := usecases.NewOTPUsecase(otpRepo, phoneValidator, otpSenderTyped)
 	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL, time.Second*10)
-	userUsecase := usecases.NewUserUsecase(userRepo, time.Second*10)
+	userUsecase := usecases.NewUserUsecase(userRepo, time.Second*1000)
 	cvUsecase := usecases.NewCVUsecase(cvRepo, feedbackRepo, skiilGapRepo, aiService, textExtractor, time.Second*15)
 
 	// Initialize controllers
