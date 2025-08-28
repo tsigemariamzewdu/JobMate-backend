@@ -11,6 +11,7 @@ func SetupRouter(authMiddleware *auth.AuthMiddleware,
 		authController *controllers.AuthController, 
 		otpController *controllers.OtpController,
 		oauthController *controllers.OAuth2Controller,
+		cvController *controllers.CVController,
 	) *gin.Engine {
 
 	router := gin.Default()
@@ -30,6 +31,10 @@ func SetupRouter(authMiddleware *auth.AuthMiddleware,
 
 	RegisterOAuthRoutes(router, oauthController)
 
+	//cv routes
+	cvGroup:=router.Group("/cv")
+	NewCVRouter(*cvController,*cvGroup)
+
 	return router
 }
 
@@ -44,11 +49,17 @@ func registerUserRoutes(router *gin.Engine, authMiddleware *auth.AuthMiddleware,
 	router.POST("/auth/refresh", authController.RefreshToken)
 }
 
+
 func NewAuthRouter(authController controllers.AuthController, group gin.RouterGroup) {
 
 	group.POST("/register", authController.Register)
 	group.POST("/login", authController.Login)
 	group.POST("/logout", authController.Logout)
+}
+
+func NewCVRouter(cvController controllers.CVController,group gin.RouterGroup){
+	group.POST("/",cvController.UploadCV)
+	group.POST("/:id/analye",cvController.AnalyzeCV)
 }
 
 func RegisterOAuthRoutes(
