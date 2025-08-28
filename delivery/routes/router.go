@@ -11,6 +11,7 @@ func SetupRouter(authMiddleware *auth.AuthMiddleware,
 		authController *controllers.AuthController, 
 		otpController *controllers.OtpController,
 		oauthController *controllers.OAuth2Controller,
+		cvController *controllers.CVController,
 	) *gin.Engine {
 
 	router := gin.Default()
