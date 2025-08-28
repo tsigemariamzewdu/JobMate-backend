@@ -89,7 +89,6 @@ CV Text:
 	if err != nil {
 		return nil, fmt.Errorf("AI generation failed: %w", err)
 	}
-
 	resp := strings.TrimSpace(result.Text())
 	resp = strings.TrimPrefix(resp, "```json")
 	resp = strings.TrimPrefix(resp, "```")
@@ -125,21 +124,32 @@ CV Text:
 		},
 	}
 
-	// Map skill gaps
-	for _, g := range aiResp.SkillGaps {
-		suggestions.SkillGaps = append(suggestions.SkillGaps, struct {
-			SkillName              string
-			CurrentLevel           int
-			RecommendedLevel       int
-			Importance             string
-			ImprovementSuggestions string
-		}{
-			SkillName:              g.SkillName,
-			CurrentLevel:           g.CurrentLevel,
-			RecommendedLevel:       g.RecommendedLevel,
-			Importance:             g.Importance,
-			ImprovementSuggestions: g.ImprovementSuggestions,
-		})
+	type skillGapType = struct {
+		SkillName              string `json:"skill_name"`
+		CurrentLevel           int    `json:"current_level"`
+		RecommendedLevel       int    `json:"recommended_level"`
+		Importance             string `json:"importance"`
+		ImprovementSuggestions string `json:"improvement_suggestions"`
+	}
+
+	if aiResp.SkillGaps == nil {
+		aiResp.SkillGaps = make([]skillGapType, 0)
+	} else {
+		for _, g := range aiResp.SkillGaps {
+			suggestions.SkillGaps = append(suggestions.SkillGaps, struct {
+				SkillName              string
+				CurrentLevel           int
+				RecommendedLevel       int
+				Importance             string
+				ImprovementSuggestions string
+			}{
+				SkillName:              g.SkillName,
+				CurrentLevel:           g.CurrentLevel,
+				RecommendedLevel:       g.RecommendedLevel,
+				Importance:             g.Importance,
+				ImprovementSuggestions: g.ImprovementSuggestions,
+			})
+		}
 	}
 
 	return suggestions, nil
