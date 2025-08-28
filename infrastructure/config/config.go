@@ -1,6 +1,5 @@
 package infrastructure
 
-
 import (
 	"path/filepath"
 	"runtime"
@@ -36,10 +35,10 @@ type Config struct {
 	EmailFrom     string
 	EmailFromName string
 
-	AIApiKey       string
-	AIModelName    string
-	AIApiBaseUrl   string
-	AIProvider     string
+	AIApiKey     string
+	AIModelName  string
+	AIApiBaseUrl string
+	AIProvider   string
 
 	DefaultPageSize int
 	MaxPageSize     int
@@ -48,16 +47,19 @@ type Config struct {
 	LogLevel       string
 	Timezone       string
 
-	GoogleClientID         string
-	GoogleClientSecret     string
-	GoogleRedirectURL      string
-	GithubClientID         string
-	GithubClientSecret     string
-	GithubRedirectURL      string
-	FacebookClientID       string
-	FacebookClientSecret   string
-	FacebookRedirectURL    string
+	GoogleClientID       string
+	GoogleClientSecret   string
+	GoogleRedirectURL    string
+	GithubClientID       string
+	GithubClientSecret   string
+	GithubRedirectURL    string
+	FacebookClientID     string
+	FacebookClientSecret string
+	FacebookRedirectURL  string
 
+	TwilioAccountSID string
+	TwilioAuthToken  string
+	TwilioFromNumber string
 }
 
 // LoadConfig loads config.env file using absolute project path which looks for
@@ -67,7 +69,7 @@ func LoadConfig() (*Config, error) {
 	// Use runtime.Caller to get to root directory
 	// it uses absolute path to the project
 	_, b, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(b), "..")
+	projectRoot := filepath.Join(filepath.Dir(b), "../../")
 
 	viper.AddConfigPath(projectRoot)
 	viper.SetConfigName("config")
@@ -102,7 +104,7 @@ func LoadConfig() (*Config, error) {
 		EmailFrom:     viper.GetString("EMAIL_FROM"),
 		EmailFromName: viper.GetString("EMAIL_FROM_NAME"),
 
-		AIApiKey: viper.GetString("AI_API_KEY"),
+		AIApiKey:     viper.GetString("AI_API_KEY"),
 		AIModelName:  viper.GetString("AI_MODEL_NAME"),
 		AIApiBaseUrl: viper.GetString("AI_API_BASE_URL"),
 		AIProvider:   viper.GetString("AI_PROVIDER"),
@@ -123,6 +125,10 @@ func LoadConfig() (*Config, error) {
 		FacebookClientID:     viper.GetString("FACEBOOK_CLIENT_ID"),
 		FacebookClientSecret: viper.GetString("FACEBOOK_CLIENT_SECRET"),
 		FacebookRedirectURL:  viper.GetString("FACEBOOK_REDIRECT_URL"),
+
+		TwilioAccountSID: viper.GetString("TWILIO_ACCOUNT_SID"),
+		TwilioAuthToken:  viper.GetString("TWILIO_AUTH_TOKEN"),
+		TwilioFromNumber: viper.GetString("TWILIO_FROM_NUMBER"),
 	}
 
 	return cfg, nil
