@@ -23,7 +23,7 @@ type aiResponse struct {
 		Strengths              string `json:"strengths"`
 		Weaknesses             string `json:"weaknesses"`
 		ImprovementSuggestions string `json:"improvement_suggestions"`
-	} `json:"cv_feedback_sessions"`
+	} `json:"cv_feedback"`
 	SkillGaps []struct {
 		SkillName              string `json:"skill_name"`
 		CurrentLevel           int    `json:"current_level"`
@@ -33,21 +33,25 @@ type aiResponse struct {
 	} `json:"skill_gaps"`
 }
 
-
 type GeminiAISuggestionService struct {
-	model string
+	model  string
+	apiKey string
 }
 
-
-func NewGeminiAISuggestionService(model string) service.AISuggestionService {
+func NewGeminiAISuggestionService(model, apiKey string) service.AISuggestionService {
 	if model == "" {
 		model = "gemini-1.5-flash"
 	}
-	return &GeminiAISuggestionService{model: model}
+	return &GeminiAISuggestionService{
+		model:  model,
+		apiKey: apiKey,
+	}
 }
 
 func (s *GeminiAISuggestionService) Analyze(ctx context.Context, cvText string) (*model.AISuggestions, error) {
-	client, err := genai.NewClient(ctx, nil)
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey: s.apiKey,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
@@ -61,7 +65,7 @@ func (s *GeminiAISuggestionService) Analyze(ctx context.Context, cvText string) 
     "extracted_education": ["education1"],
     "summary": "Concise professional summary"
   },
-  "cv_feedback_sessions": {
+  "cv_feedback": {
     "strengths": "Highlight strong points",
     "weaknesses": "Highlight weak points",
     "improvement_suggestions": "Actionable suggestions"
