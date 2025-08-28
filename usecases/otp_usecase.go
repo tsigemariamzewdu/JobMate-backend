@@ -28,21 +28,21 @@ var (
     ErrInvalidPhone = errors.New("invalid phone number")
 )
 
-type AuthUsecase struct {
+type OTPUsecase struct {
     OTPRepo        repo.IOTPRepository
     PhoneValidator uc.IPhoneValidator
     OTPSender      svc.IOTPSender
 }
 
-func NewAuthUsecase(repo repo.IOTPRepository, validator uc.IPhoneValidator, sender svc.IOTPSender) *AuthUsecase {
-    return &AuthUsecase{
-        OTPRepo: repo,
+func NewOTPUsecase(repo repo.IOTPRepository, validator uc.IPhoneValidator, sender svc.IOTPSender) *OTPUsecase {
+    return &OTPUsecase{
+        OTPRepo:       repo,
         PhoneValidator: validator,
-        OTPSender: sender,
+        OTPSender:     sender,
     }
 }
 
-func (u *AuthUsecase) RequestOTP(ctx context.Context, req *models.OTPRequest) error {
+func (u *OTPUsecase) RequestOTP(ctx context.Context, req *models.OTPRequest) error {
     // Normalize and validate phone
     normalizedPhone, err := u.PhoneValidator.Normalize(req.Phone)
     if err != nil {
