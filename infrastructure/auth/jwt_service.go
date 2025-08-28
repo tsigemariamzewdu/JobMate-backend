@@ -37,6 +37,18 @@ func (j *JWTService) GenerateAccessToken(userID string, preferredLanguage string
 	return tokenString, 15 * time.Minute, nil
 }
 
+//generate verification token 
+func (j *JWTService) GenerateVerificationToken(userID string) (string, error) {
+	claims := jwt.MapClaims{
+		"sub": userID,
+
+		"exp": time.Now().Add(15 * time.Minute).Unix(), // Shorter expiry for verification token
+		"iat": time.Now().Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(j.accessSecret)
+}
+
 // GenerateRefreshToken creates a long-lived token for refreshing the access token.
 func (j *JWTService) GenerateRefreshToken(userID string) (string, error) {
 	claims := jwt.MapClaims{

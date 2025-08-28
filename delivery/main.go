@@ -1,24 +1,23 @@
 package main
 
 import (
+	"fmt"
 	"context"
 	"log"
 	"os"
-
+	"time"
 
 	"github.com/tsigemariamzewdu/JobMate-backend/delivery/controllers"
-	"github.com/tsigemariamzewdu/JobMate-backend/delivery/routers"
+	"github.com/tsigemariamzewdu/JobMate-backend/delivery/routes"
 	authinfra "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/auth"
 	config "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/config"
 	mongoclient "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/db/mongo"
-	svc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
 	"github.com/tsigemariamzewdu/JobMate-backend/repositories"
-	repo "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/repositories"
 	"github.com/tsigemariamzewdu/JobMate-backend/usecases"
 )
 
 func main() {
-	
+
 	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -35,7 +34,14 @@ func main() {
 	}()
 
 	// Initialize repositories
-	var otpRepo repo.IOTPRepository = repositories.NewOTPRepository(db)
+	otpRepo := repositories.NewOTPRepository(db)
+	authRepo := repositories.NewAuthRepository(db)
+	userRepo := repositories.NewUserRepository(db)
+
+	providersConfigs, err := config.BuildProviderConfigs()
+	if err != nil {
+		log.Fatal("error: ", err)
+	}
 
 	// Initialize services
 	phoneValidator := &authinfra.PhoneValidatorImpl{}
@@ -43,16 +49,29 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize OTP sender: %v", err)
 	}
-	var otpSenderTyped svc.IOTPSender = otpSender
+	otpSenderTyped := otpSender
+	jwtService := authinfra.NewJWTService(cfg.JWTSecretKey, fmt.Sprint(cfg.JWTExpirationMinutes))
+	passwordService := authinfra.NewPasswordService()
+	authMiddleware := authinfra.NewAuthMiddleware(jwtService)
+	oauthService, err := authinfra.NewOAuth2Service(providersConfigs)
+
+	if err != nil {
+		log.Fatalf("Failed to initialize OAuth2 service: %v", err)
+	}
 
 	// Initialize use case
-	authUsecase := usecases.NewAuthUsecase(otpRepo, phoneValidator, otpSenderTyped)
+	otpUsecase := usecases.NewOTPUsecase(otpRepo, phoneValidator, otpSenderTyped)
+	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL, time.Second*10,)
+	userUsecase := usecases.NewUserUsecase(userRepo, time.Second*10)
 
-	// Initialize controller
+	// Initialize controllers
+	otpController := controllers.NewOtpController(otpUsecase)
 	authController := controllers.NewAuthController(authUsecase)
+	userController := controllers.NewUserController(userUsecase)
+	oauthController := controllers.NewOAuth2Controller(oauthService, authUsecase)
 
 	// Setup router (add more controllers as you add features)
-	router := routers.SetupRouter(authController)
+	router := routes.SetupRouter(authMiddleware, userController, authController, otpController, oauthController)
 
 	// Get port from config or environment variable
 	port := cfg.AppPort
