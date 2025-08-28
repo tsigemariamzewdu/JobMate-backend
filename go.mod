@@ -58,6 +58,7 @@ require (
 )
 
 require (
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
 	github.com/spf13/viper v1.20.1
 	go.mongodb.org/mongo-driver v1.17.4
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
