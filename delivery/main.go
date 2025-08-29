@@ -9,10 +9,13 @@ import (
 
 	"github.com/tsigemariamzewdu/JobMate-backend/delivery/controllers"
 	"github.com/tsigemariamzewdu/JobMate-backend/delivery/routes"
+	// "github.com/tsigemariamzewdu/JobMate-backend/domain"
 	groqClient "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/ai"
 	"github.com/tsigemariamzewdu/JobMate-backend/infrastructure/ai_service"
 	authinfra "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/auth"
 	config "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/config"
+	// infrastructure "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/config"
+	infrastructure2 "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/email"
 
 	mongoclient "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/db/mongo"
 	utils "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/util"
@@ -54,6 +57,7 @@ func main() {
 
 	// Initialize services
 	phoneValidator := &authinfra.PhoneValidatorImpl{}
+	emailService := infrastructure2.NewSMTPService(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUsername, cfg.SMTPPassword, cfg.EmailFrom)
 	otpSender, err := authinfra.NewOTPSenderFromEnv(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize OTP sender: %v", err)
@@ -75,8 +79,8 @@ func main() {
 	groqClient := groqClient.NewGroqClient(cfg)
 
 	// Initialize use case
-	otpUsecase := usecases.NewOTPUsecase(otpRepo, phoneValidator, otpSenderTyped)
-	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL, time.Second*10)
+	otpUsecase := usecases.NewOTPUsecase(otpRepo, phoneValidator, otpSenderTyped,emailService)
+	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL,otpRepo, time.Second*10)
 	userUsecase := usecases.NewUserUsecase(userRepo, time.Second*1000)
 	chatUsecase := usecases.NewChatUsecase(conversationRepo, groqClient, cfg)
 	cvUsecase := usecases.NewCVUsecase(cvRepo, feedbackRepo, skiilGapRepo, aiService, textExtractor, time.Second*15)
