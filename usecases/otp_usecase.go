@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/tsigemariamzewdu/JobMate-backend/domain"
@@ -28,22 +29,23 @@ var (
     ErrRateLimited = errors.New("too many OTP requests, please try again later")
     ErrInvalidPhone = errors.New("invalid phone number")
     ErrInvalidEmail=errors.New("invaid email address")
+    ErrEmailValidationFailed=errors.New("email validation failed")
 )
 
 type OTPUsecase struct {
     OTPRepo        repo.IOTPRepository
     PhoneValidator uc.IPhoneValidator
     OTPSender      svc.IOTPSender
-    EmailValidator uc.IEmailValidator
+   
     EmailService   domain.IEmailService
 }
 
-func NewOTPUsecase(repo repo.IOTPRepository, phonevalidator uc.IPhoneValidator,emailvalidator uc.IEmailValidator, sender svc.IOTPSender,emailService domain.IEmailService) *OTPUsecase {
+func NewOTPUsecase(repo repo.IOTPRepository, phonevalidator uc.IPhoneValidator, sender svc.IOTPSender,emailService domain.IEmailService) *OTPUsecase {
     return &OTPUsecase{
         OTPRepo:       repo,
         PhoneValidator: phonevalidator,
         OTPSender:     sender,
-        EmailValidator :emailvalidator,
+        
         EmailService: emailService,
     }
 }
@@ -51,17 +53,19 @@ func NewOTPUsecase(repo repo.IOTPRepository, phonevalidator uc.IPhoneValidator,e
 func (u *OTPUsecase) RequestOTP(ctx context.Context, req *models.OTPRequest) error {
     
     //validate email
-    err:=u.EmailValidator.Validate(*req.Email)
-    if err !=nil{
-        return ErrInvalidEmail
-    }
+   
+    // email format validation
+	if !validateEmail(*req.Email) {
+		return  ErrEmailValidationFailed
+	}
+
     
     // Rate limiting by email
-    since := time.Now().Add(-otpRateLimitWindow)
-    count, err := u.OTPRepo.GetRecentRequestsByEmail(ctx, *req.Email, since)
-    if err == nil && count >= otpRateLimitCount {
-        return ErrRateLimited
-    }
+    // since := time.Now().Add(-otpRateLimitWindow)
+    // count, err := u.OTPRepo.GetRecentRequestsByEmail(ctx, *req.Email, since)
+    // if err == nil && count >= otpRateLimitCount {
+    //     return ErrRateLimited
+    // }
     
     // // Normalize and validate phone
     // normalizedPhone, err := u.PhoneValidator.Normalize(*req.Phone)
@@ -168,4 +172,12 @@ func generateVerificationEmailBody(otp string) string {
 </html>
 
   `, otp)
+}
+
+//function to validate email
+
+func validateEmail(email string) bool {
+	re := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	return re.MatchString(email)
+
 }
