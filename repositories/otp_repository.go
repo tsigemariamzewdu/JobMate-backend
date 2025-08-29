@@ -28,6 +28,7 @@ func (r *OTPRepositoryImpl) CreateVerificationCode(ctx context.Context, code *mo
 	doc := bson.M{
 		"user_id":    code.UserID,
 		"phone":      code.Phone,
+		"email":    code.Email,
 		"code":       code.CodeHash,
 		"type":       code.Type,
 		"expires_at": code.ExpiresAt,
@@ -40,6 +41,11 @@ func (r *OTPRepositoryImpl) CreateVerificationCode(ctx context.Context, code *mo
 
 func (r *OTPRepositoryImpl) GetRecentRequestsByPhone(ctx context.Context, phone string, since time.Time) (int, error) {
 	filter := bson.M{"phone": phone, "created_at": bson.M{"$gte": since}}
+	count, err := r.otpCollection.CountDocuments(ctx, filter)
+	return int(count), err
+}
+func (r *OTPRepositoryImpl) GetRecentRequestsByEmail(ctx context.Context, email string, since time.Time) (int, error) {
+	filter := bson.M{"email": email, "created_at": bson.M{"$gte": since}}
 	count, err := r.otpCollection.CountDocuments(ctx, filter)
 	return int(count), err
 }

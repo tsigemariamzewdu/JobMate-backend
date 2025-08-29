@@ -11,5 +11,6 @@ import (
 type IOTPRepository interface {
 	CreateVerificationCode(ctx context.Context, code *models.UserVerificationCode) error
 	GetRecentRequestsByPhone(ctx context.Context, phone string, since time.Time) (int, error)
+	GetRecentRequestsByEmail(ctx context.Context, phone string, since time.Time) (int, error)
 	GetRecentRequestsByIP(ctx context.Context, ip string, since time.Time) (int, error)
 }

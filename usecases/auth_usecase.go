@@ -14,6 +14,7 @@ type AuthUsecase struct {
 	AuthRepo        domain.IAuthRepository
 	PasswordService domain.IPasswordService
 	JWTService      domain.IJWTService
+	EmailService    domain.IEmailService
 	BaseURL         string
 	ContextTimeout  time.Duration
 }
@@ -103,6 +104,8 @@ func (uc *AuthUsecase) Register(ctx context.Context, input *domain.User, oauthUs
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", domain.ErrUserCreationFailed, err)
 	}
+	
+
 
 	return &newUser, nil
 }
@@ -381,22 +384,4 @@ func validatePasswordStrength(password string) bool {
 	return hasLetter && hasNumber
 }
 
-//function to generate verification email body
 
-func generateVerificationEmailBody(verificationLink string) string {
-	return fmt.Sprintf(`
-    <html>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h2>Welcome!</h2>
-        <p>Thanks for signing up. Please verify your email address by clicking the link below.</p>
-        <p>This is a one-time link and may expire soon.</p>
-        <p>
-          <a href="%s" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50;
-          color: white; text-decoration: none; border-radius: 4px;">Verify Email</a>
-        </p>
-        <p>If you didn’t request this, feel free to ignore this email.</p>
-        <p>— The Team</p>
-      </body>
-    </html>
-  `, verificationLink)
-}
