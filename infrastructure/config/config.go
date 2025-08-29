@@ -71,13 +71,16 @@ type Config struct {
 	TwilioAccountSID string
 	TwilioAuthToken  string
 	TwilioFromNumber string
+
+	// JobData
+	JobDataApiKey    string
 }
 
 // LoadConfig loads config.env from project root (if present) and also supports environment variables.
 // If config.env is missing, it falls back to environment variables.
 func LoadConfig() (*Config, error) {
 	// Tell viper to look for "config.env" in the root folder
-	viper.AddConfigPath(".") // root directory
+	viper.AddConfigPath("../") 
 	viper.SetConfigName("config")
 	viper.SetConfigType("env")
 	viper.AutomaticEnv()
@@ -151,6 +154,9 @@ func LoadConfig() (*Config, error) {
 		AfricaTalkingUsername: viper.GetString("AFRICASTALKING_USERNAME"),
 		AfricaTalkingApiKey:   viper.GetString("AFRICASTALKING_API_KEY"),
 		AfricaTalkingSenderId: viper.GetString("AFRICASTALKING_SENDER_ID"),
+
+		// JobData
+		JobDataApiKey: viper.GetString("JOBDATA_API_KEY"),
 	}
 
 	return cfg, nil
