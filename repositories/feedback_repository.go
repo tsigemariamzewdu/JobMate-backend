@@ -15,7 +15,7 @@ type feedbackRepository struct {
 
 func NewFeedbackRepository(db *mongo.Database) repo.FeedbackRepository {
 	return &feedbackRepository{
-		collection: db.Collection("cv_feedback_sessions"),
+		collection: db.Collection("cv_feedback"),
 	}
 }
 

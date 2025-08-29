@@ -2,29 +2,27 @@ package usecases
 
 import (
 	"context"
+	"fmt"
 
 	"mime/multipart"
 	"time"
 
 	repo "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/repositories"
-	
+
 	service "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
 
 	usecase "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/usecases"
 
 	model "github.com/tsigemariamzewdu/JobMate-backend/domain/models"
-	
 )
 
-
-
 type CVUsecase struct {
-	cvRepo       repo.CVRepository
-	feedbackRepo repo.FeedbackRepository
-	skillGapRepo repo.SkillGapRepository
-	aiService    service.AISuggestionService
+	cvRepo        repo.CVRepository
+	feedbackRepo  repo.FeedbackRepository
+	skillGapRepo  repo.SkillGapRepository
+	aiService     service.AISuggestionService
 	textExtractor service.TextExtractor
-	timeout      time.Duration
+	timeout       time.Duration
 }
 
 func NewCVUsecase(
@@ -36,25 +34,26 @@ func NewCVUsecase(
 	timeout time.Duration,
 ) usecase.ICVUsecase {
 	return &CVUsecase{
-		cvRepo:       cvRepo,
-		feedbackRepo: feedbackRepo,
-		skillGapRepo: skillGapRepo,
-		aiService:    aiService,
+		cvRepo:        cvRepo,
+		feedbackRepo:  feedbackRepo,
+		skillGapRepo:  skillGapRepo,
+		aiService:     aiService,
 		textExtractor: textExtractor,
-		timeout:      timeout,
+		timeout:       timeout,
 	}
 }
 
-// Upload handles creating a new CV, extracting text if a file is provided.
 func (uc *CVUsecase) Upload(ctx context.Context, userID string, rawText string, file *multipart.FileHeader) (*model.CV, error) {
+
 	c, cancel := context.WithTimeout(ctx, uc.timeout)
 	defer cancel()
 
 	if rawText == "" && file != nil {
 		text, err := uc.textExtractor.Extract(file)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to extract text from file: %w", err)
 		}
+
 		rawText = text
 	}
 
@@ -73,13 +72,11 @@ func (uc *CVUsecase) Upload(ctx context.Context, userID string, rawText string, 
 
 	id, err := uc.cvRepo.Create(c, cv)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create CV in repository: %w", err)
 	}
 	cv.ID = id
 	return cv, nil
 }
-
-
 
 func (uc *CVUsecase) Analyze(ctx context.Context, cvID string) (*model.AISuggestions, error) {
 	c, cancel := context.WithTimeout(ctx, uc.timeout)
@@ -117,7 +114,7 @@ func (uc *CVUsecase) Analyze(ctx context.Context, cvID string) (*model.AISuggest
 		ImprovementSuggestions: suggestions.CVFeedback.ImprovementSuggestions,
 		GeneratedAt:            time.Now(),
 	}
-	_, _ = uc.feedbackRepo.Create(c, feedback) 
+	_, _ = uc.feedbackRepo.Create(c, feedback)
 
 	//  Save skill gaps
 	var gaps []*model.SkillGap
