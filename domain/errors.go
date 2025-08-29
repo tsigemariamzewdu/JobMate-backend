@@ -48,4 +48,10 @@ var (
 
 	ErrCVNotFound  = errors.New("cv not found")
 	ErrInvalidCVID = errors.New("invalid cv id")
+
+	//otp realted errors
+	ErrMissingOTP=errors.New("otp not found")
+	ErrOTPExpired=errors.New("otp is expired")
+	ErrInvalidOTP=errors.New("otp is invalid")
+	ErrOTPUseFailed=errors.New("otp has failed ")
 )
