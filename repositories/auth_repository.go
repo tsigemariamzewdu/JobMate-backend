@@ -17,13 +17,15 @@ import (
 // AuthRepository handles MongoDB operations for authentication.
 type AuthRepository struct {
 	tokensCollection *mongo.Collection
+	userCollection   *mongo.Collection
 }
 
 // NewAuthRepository creates a new instance of AuthRepository.
 func NewAuthRepository(db *mongo.Database) domain.IAuthRepository {
-	collection := db.Collection("refresh_tokens")
+	
 	return &AuthRepository{
-		tokensCollection: collection,
+		userCollection: db.Collection("users"),
+		tokensCollection: db.Collection("refresh_tokens"),
 	}
 }
 
@@ -33,7 +35,7 @@ func (r *AuthRepository) CreateUser(ctx context.Context, user *domain.User) erro
 	if err != nil {
 		return err
 	}
-	result, err := r.tokensCollection.InsertOne(ctx, userModel)
+	result, err := r.userCollection.InsertOne(ctx, userModel)
 	if err != nil {
 		return domain.ErrUserCreationFailed
 	}
@@ -49,7 +51,7 @@ func (r *AuthRepository) CreateUser(ctx context.Context, user *domain.User) erro
 // CountByEmail counts how many entry exist in the collection with the specified email
 func (r *AuthRepository) CountByEmail(ctx context.Context, email string) (int64, error) {
 	filter := bson.D{{Key: "email", Value: email}}
-	return r.tokensCollection.CountDocuments(ctx, filter)
+	return r.userCollection.CountDocuments(ctx, filter)
 }
 
 // CountByPhone counts how many entry exist in the collection with the specified phone
@@ -70,7 +72,7 @@ func (r *AuthRepository) SaveRefreshToken(ctx context.Context, userID string, re
 		CreatedAt: time.Now(),
 	}
 
-	_, err := r.tokensCollection.InsertOne(ctx, model)
+	_, err := r.userCollection.InsertOne(ctx, model)
 	if err != nil {
 		return fmt.Errorf("failed to save refresh token: %w", err)
 	}
@@ -80,7 +82,7 @@ func (r *AuthRepository) SaveRefreshToken(ctx context.Context, userID string, re
 // FindByEmail query the user collection based on specified email
 func (ur *AuthRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	filter := bson.D{{Key: "email", Value: email}}
-	result := ur.tokensCollection.FindOne(ctx, filter)
+	result := ur.userCollection.FindOne(ctx, filter)
 
 	if err := consolidateUserError(result.Err()); err != nil {
 		return nil, err
@@ -105,7 +107,7 @@ func (ur *AuthRepository) FindByID(ctx context.Context, id string) (*domain.User
 
 	// prepare the filter
 	filter := bson.D{{Key: "_id", Value: objID}}
-	result := ur.tokensCollection.FindOne(ctx, filter)
+	result := ur.userCollection.FindOne(ctx, filter)
 
 	if err := consolidateUserError(result.Err()); err != nil {
 		return nil, err
@@ -122,7 +124,7 @@ func (ur *AuthRepository) FindByID(ctx context.Context, id string) (*domain.User
 
 func (ur *AuthRepository) FindByPhone(ctx context.Context, phone string) (*domain.User, error) {
 	filter := bson.D{{Key: "phone", Value: phone}}
-	result := ur.tokensCollection.FindOne(ctx, filter)
+	result := ur.userCollection.FindOne(ctx, filter)
 
 	if err := consolidateUserError(result.Err()); err != nil {
 		return nil, err
@@ -144,7 +146,7 @@ func (ur *AuthRepository) IsEmailVerified(ctx context.Context, id string) (bool,
 		return false, domain.ErrInvalidUserID
 	}
 	filter := bson.D{{Key: "_id", Value: objID}}
-	result := ur.tokensCollection.FindOne(ctx, filter)
+	result := ur.userCollection.FindOne(ctx, filter)
 
 	if err := consolidateUserError(result.Err()); err != nil {
 		return false, err
@@ -164,7 +166,7 @@ func (ur *AuthRepository) UpdateUser(ctx context.Context, user *domain.User) err
 		return err
 	}
 	filter := bson.D{{Key: "_id", Value: userData.UserID}}
-	result, err := ur.tokensCollection.ReplaceOne(ctx, filter, userData)
+	result, err := ur.userCollection.ReplaceOne(ctx, filter, userData)
 	if err != nil {
 		return err
 	}

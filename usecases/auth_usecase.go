@@ -2,8 +2,9 @@ package usecases
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	
+
 	"time"
 	"unicode"
 
@@ -64,7 +65,7 @@ func (uc *AuthUsecase) Register(ctx context.Context, input *domain.User, oauthUs
     // OTP verification (only for normal registration, not OAuth)
 if oauthUser == nil {
     if input.OTP == nil {
-        return nil, fmt.Errorf("%w", domain.ErrMissingOTP)
+        return nil, fmt.Errorf("%w", errors.New("input otp is empty "))
     }
 
     // fetch latest OTP for email - FIXED: Use GetLatestCodeByEmail instead of GetRecentRequestsByEmail
@@ -73,7 +74,7 @@ if oauthUser == nil {
         return nil, fmt.Errorf("%w: %v", domain.ErrDatabaseOperationFailed, err)
     }
     if code == nil {
-        return nil, fmt.Errorf("%w", domain.ErrMissingOTP)
+        return nil, fmt.Errorf("%w", errors.New("error getting the latest code by email"))
     }
 
     if code.Used || time.Now().After(code.ExpiresAt) {
@@ -122,6 +123,7 @@ if oauthUser == nil {
 		LastName:  chooseNonEmpty(get(input, func(u *domain.User) *string { return u.LastName }), get(oauthUser, func(u *domain.User) *string { return u.LastName })),
 
 		Email:          email,
+		IsVerified: true,
 		Password:       hashedPassword,
 		ProfilePicture: oauthUserPicture(oauthUser),
 		Provider:       oauthUserProvider(oauthUser),

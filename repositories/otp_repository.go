@@ -123,6 +123,22 @@ func (r *OTPRepositoryImpl) mapToUserVerificationCode(doc bson.M) *models.UserVe
 		e := doc["email"].(string)
 		email = &e
 	}
+
+	// Handle primitive.DateTime conversion for expires_at
+	var expiresAt time.Time
+	if dt, ok := doc["expires_at"].(primitive.DateTime); ok {
+		expiresAt = dt.Time()
+	} else if t, ok := doc["expires_at"].(time.Time); ok {
+		expiresAt = t
+	}
+
+	// Handle primitive.DateTime conversion for created_at
+	var createdAt time.Time
+	if dt, ok := doc["created_at"].(primitive.DateTime); ok {
+		createdAt = dt.Time()
+	} else if t, ok := doc["created_at"].(time.Time); ok {
+		createdAt = t
+	}
 	
 	return &models.UserVerificationCode{
 		ID:         doc["_id"].(primitive.ObjectID).Hex(),
@@ -131,9 +147,8 @@ func (r *OTPRepositoryImpl) mapToUserVerificationCode(doc bson.M) *models.UserVe
 		Email:      email,
 		CodeHash:   doc["code"].(string),
 		Type:       doc["type"].(string),
-		ExpiresAt:  doc["expires_at"].(time.Time),
+		ExpiresAt:  expiresAt,
 		Used:       doc["used"].(bool),
-		CreatedAt:  doc["created_at"].(time.Time),
+		CreatedAt:  createdAt,
 	}
 }
-
