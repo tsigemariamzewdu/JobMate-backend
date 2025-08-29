@@ -139,25 +139,25 @@ func (ur *AuthRepository) FindByPhone(ctx context.Context, phone string) (*domai
 	return &user, nil
 }
 
-// IsEmailVerified query and check if the specified id is verified or not
-func (ur *AuthRepository) IsEmailVerified(ctx context.Context, id string) (bool, error) {
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return false, domain.ErrInvalidUserID
-	}
-	filter := bson.D{{Key: "_id", Value: objID}}
-	result := ur.userCollection.FindOne(ctx, filter)
+// // IsEmailVerified query and check if the specified id is verified or not
+// func (ur *AuthRepository) IsEmailVerified(ctx context.Context, id string) (bool, error) {
+// 	objID, err := primitive.ObjectIDFromHex(id)
+// 	if err != nil {
+// 		return false, domain.ErrInvalidUserID
+// 	}
+// 	filter := bson.D{{Key: "_id", Value: objID}}
+// 	result := ur.userCollection.FindOne(ctx, filter)
 
-	if err := consolidateUserError(result.Err()); err != nil {
-		return false, err
-	}
+// 	if err := consolidateUserError(result.Err()); err != nil {
+// 		return false, err
+// 	}
 
-	var userModel models.User
-	if err := result.Decode(&userModel); err != nil {
-		return false, domain.ErrDecodingDocument
-	}
-	return userModel.IsVerified, nil
-}
+// 	var userModel models.User
+// 	if err := result.Decode(&userModel); err != nil {
+// 		return false, domain.ErrDecodingDocument
+// 	}
+// 	return userModel.IsVerified, nil
+// }
 
 // Updates a user completely, it returns ErrInvalidUserID or ErrUserNotFound
 func (ur *AuthRepository) UpdateUser(ctx context.Context, user *domain.User) error {

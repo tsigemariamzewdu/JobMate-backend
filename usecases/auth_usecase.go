@@ -167,13 +167,13 @@ func (uc *AuthUsecase) Login(ctx context.Context, input *domain.User) (*domain.L
 	}
 
 	// check if email is verified
-	isVerified, err := uc.AuthRepo.IsEmailVerified(ctx, user.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("%w", domain.ErrEmailVerficationFailed)
-	}
-	if !isVerified {
-		return nil, fmt.Errorf("%w", domain.ErrEmailNotVerified)
-	}
+	// isVerified, err := uc.AuthRepo.IsEmailVerified(ctx, user.UserID)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("%w", domain.ErrEmailVerficationFailed)
+	// }
+	// if !isVerified {
+	// 	return nil, fmt.Errorf("%w", domain.ErrEmailNotVerified)
+	// }
 
 	// compare passwords
 	if user.Password == nil || !uc.PasswordService.ComparePassword(*user.Password, *input.Password) {
