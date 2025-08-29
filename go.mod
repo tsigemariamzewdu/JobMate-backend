@@ -10,7 +10,6 @@ require (
 	golang.org/x/oauth2 v0.25.0
 	google.golang.org/genai v1.22.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
-	rsc.io/pdf v0.1.1
 )
 
 require (
