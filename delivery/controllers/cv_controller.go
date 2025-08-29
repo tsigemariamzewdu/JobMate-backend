@@ -76,12 +76,11 @@ func (c *CVController) UploadCV(ctx *gin.Context) {
 		head := make([]byte, 512)
 		n, _ := io.ReadFull(file, head)
 		mime := http.DetectContentType(head[:n])
-
+		ext := strings.ToLower(path.Ext(req.File.Filename))
 		allowed := map[string]bool{
 			"application/pdf": true,
-			"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
 		}
-		if !allowed[mime] && !strings.HasPrefix(mime, "text/plain") {
+		if !allowed[mime] && !strings.HasPrefix(mime, "text/plain") && ext != ".docx" {
 			ctx.JSON(http.StatusUnsupportedMediaType, utils.ErrorPayload(
 				"Only PDF, DOCX, or TXT allowed",
 				map[string]any{"detected": mime},
