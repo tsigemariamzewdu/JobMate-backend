@@ -12,7 +12,7 @@ import (
 	"github.com/tsigemariamzewdu/JobMate-backend/infrastructure/ai_service"
 	authinfra "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/auth"
 	config "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/config"
-	
+
 	mongoclient "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/db/mongo"
 	utils "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/util"
 	"github.com/tsigemariamzewdu/JobMate-backend/repositories"
@@ -41,9 +41,9 @@ func main() {
 	otpRepo := repositories.NewOTPRepository(db)
 	authRepo := repositories.NewAuthRepository(db)
 	userRepo := repositories.NewUserRepository(db)
-	cvRepo:=repositories.NewCVRepository(db)
-	feedbackRepo:=repositories.NewFeedbackRepository(db)
-	skiilGapRepo:=repositories.NewSkillGapRepository(db)
+	cvRepo := repositories.NewCVRepository(db)
+	feedbackRepo := repositories.NewFeedbackRepository(db)
+	skiilGapRepo := repositories.NewSkillGapRepository(db)
 
 	providersConfigs, err := config.BuildProviderConfigs()
 	if err != nil {
@@ -61,9 +61,9 @@ func main() {
 	passwordService := authinfra.NewPasswordService()
 	authMiddleware := authinfra.NewAuthMiddleware(jwtService)
 	oauthService, err := authinfra.NewOAuth2Service(providersConfigs)
-	aiService:=ai_service.NewGeminiAISuggestionService("gemini-1.5-flash") // to be loaded from config later
+	aiService := ai_service.NewGeminiAISuggestionService("gemini-1.5-flash", cfg.AIApiKey)
 
-	textExtractor:=utils.NewFileTextExtractor()
+	textExtractor := utils.NewFileTextExtractor()
 
 	if err != nil {
 		log.Fatalf("Failed to initialize OAuth2 service: %v", err)
@@ -71,19 +71,19 @@ func main() {
 
 	// Initialize use case
 	otpUsecase := usecases.NewOTPUsecase(otpRepo, phoneValidator, otpSenderTyped)
-	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL, time.Second*10,)
-	userUsecase := usecases.NewUserUsecase(userRepo, time.Second*10)
-	cvUsecase:=usecases.NewCVUsecase(cvRepo,feedbackRepo,skiilGapRepo,aiService,textExtractor,time.Second*15)
+	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL, time.Second*10)
+	userUsecase := usecases.NewUserUsecase(userRepo, time.Second*1000)
+	cvUsecase := usecases.NewCVUsecase(cvRepo, feedbackRepo, skiilGapRepo, aiService, textExtractor, time.Second*15)
 
 	// Initialize controllers
 	otpController := controllers.NewOtpController(otpUsecase)
 	authController := controllers.NewAuthController(authUsecase)
 	userController := controllers.NewUserController(userUsecase)
 	oauthController := controllers.NewOAuth2Controller(oauthService, authUsecase)
-	cvController:=controllers.NewCVController(cvUsecase)
+	cvController := controllers.NewCVController(cvUsecase)
 
 	// Setup router (add more controllers as you add features)
-	router := routes.SetupRouter(authMiddleware, userController, authController, otpController, oauthController,cvController)
+	router := routes.SetupRouter(authMiddleware, userController, authController, otpController, oauthController, cvController)
 
 	// Get port from config or environment variable
 	port := cfg.AppPort

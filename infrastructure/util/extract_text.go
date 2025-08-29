@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 
 	service "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
+	pdfparser "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/pdf_parser"
 
 	"github.com/unidoc/unioffice/document"
-	"rsc.io/pdf"
 )
 
 type FileTextExtractor struct{}
@@ -41,30 +41,17 @@ func (e *FileTextExtractor) Extract(fileHeader *multipart.FileHeader) (string, e
 }
 
 func extractPDFText(file multipart.File) (string, error) {
-	tmp, err := saveTempFile(file, "upload-*.pdf")
+	tmpPath, err := saveTempFile(file, "upload-*.pdf")
 	if err != nil {
 		return "", err
 	}
-	defer os.Remove(tmp)
+	defer os.Remove(tmpPath)
 
-	r, err := pdf.Open(tmp)
+	text, err := pdfparser.ParsePDF(tmpPath)
 	if err != nil {
 		return "", err
 	}
-
-	var buf bytes.Buffer
-	for i := 0; i < r.NumPage(); i++ {
-		p := r.Page(i)
-		if p.V.IsNull() {
-			continue
-		}
-		content := p.Content()
-		for _, txt := range content.Text {
-			buf.WriteString(txt.S)
-			buf.WriteString(" ")
-		}
-	}
-	return buf.String(), nil
+	return text, nil
 }
 
 func extractDocxText(file multipart.File) (string, error) {

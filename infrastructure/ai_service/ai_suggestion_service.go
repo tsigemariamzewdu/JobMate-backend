@@ -23,7 +23,7 @@ type aiResponse struct {
 		Strengths              string `json:"strengths"`
 		Weaknesses             string `json:"weaknesses"`
 		ImprovementSuggestions string `json:"improvement_suggestions"`
-	} `json:"cv_feedback_sessions"`
+	} `json:"cv_feedback"`
 	SkillGaps []struct {
 		SkillName              string `json:"skill_name"`
 		CurrentLevel           int    `json:"current_level"`
@@ -33,21 +33,25 @@ type aiResponse struct {
 	} `json:"skill_gaps"`
 }
 
-
 type GeminiAISuggestionService struct {
-	model string
+	model  string
+	apiKey string
 }
 
-
-func NewGeminiAISuggestionService(model string) service.AISuggestionService {
+func NewGeminiAISuggestionService(model, apiKey string) service.AISuggestionService {
 	if model == "" {
 		model = "gemini-1.5-flash"
 	}
-	return &GeminiAISuggestionService{model: model}
+	return &GeminiAISuggestionService{
+		model:  model,
+		apiKey: apiKey,
+	}
 }
 
 func (s *GeminiAISuggestionService) Analyze(ctx context.Context, cvText string) (*model.AISuggestions, error) {
-	client, err := genai.NewClient(ctx, nil)
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey: s.apiKey,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
@@ -61,7 +65,7 @@ func (s *GeminiAISuggestionService) Analyze(ctx context.Context, cvText string) 
     "extracted_education": ["education1"],
     "summary": "Concise professional summary"
   },
-  "cv_feedback_sessions": {
+  "cv_feedback": {
     "strengths": "Highlight strong points",
     "weaknesses": "Highlight weak points",
     "improvement_suggestions": "Actionable suggestions"
@@ -85,7 +89,6 @@ CV Text:
 	if err != nil {
 		return nil, fmt.Errorf("AI generation failed: %w", err)
 	}
-
 	resp := strings.TrimSpace(result.Text())
 	resp = strings.TrimPrefix(resp, "```json")
 	resp = strings.TrimPrefix(resp, "```")
@@ -121,21 +124,32 @@ CV Text:
 		},
 	}
 
-	// Map skill gaps
-	for _, g := range aiResp.SkillGaps {
-		suggestions.SkillGaps = append(suggestions.SkillGaps, struct {
-			SkillName              string
-			CurrentLevel           int
-			RecommendedLevel       int
-			Importance             string
-			ImprovementSuggestions string
-		}{
-			SkillName:              g.SkillName,
-			CurrentLevel:           g.CurrentLevel,
-			RecommendedLevel:       g.RecommendedLevel,
-			Importance:             g.Importance,
-			ImprovementSuggestions: g.ImprovementSuggestions,
-		})
+	type skillGapType = struct {
+		SkillName              string `json:"skill_name"`
+		CurrentLevel           int    `json:"current_level"`
+		RecommendedLevel       int    `json:"recommended_level"`
+		Importance             string `json:"importance"`
+		ImprovementSuggestions string `json:"improvement_suggestions"`
+	}
+
+	if aiResp.SkillGaps == nil {
+		aiResp.SkillGaps = make([]skillGapType, 0)
+	} else {
+		for _, g := range aiResp.SkillGaps {
+			suggestions.SkillGaps = append(suggestions.SkillGaps, struct {
+				SkillName              string
+				CurrentLevel           int
+				RecommendedLevel       int
+				Importance             string
+				ImprovementSuggestions string
+			}{
+				SkillName:              g.SkillName,
+				CurrentLevel:           g.CurrentLevel,
+				RecommendedLevel:       g.RecommendedLevel,
+				Importance:             g.Importance,
+				ImprovementSuggestions: g.ImprovementSuggestions,
+			})
+		}
 	}
 
 	return suggestions, nil
