@@ -20,7 +20,6 @@ import (
 	utils "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/util"
 	"github.com/tsigemariamzewdu/JobMate-backend/repositories"
 	"github.com/tsigemariamzewdu/JobMate-backend/usecases"
-	// "google.golang.org/grpc/internal/resolver"
 )
 
 func main() {
@@ -47,6 +46,7 @@ func main() {
 	cvRepo := repositories.NewCVRepository(db)
 	feedbackRepo := repositories.NewFeedbackRepository(db)
 	skiilGapRepo := repositories.NewSkillGapRepository(db)
+	chatRepo := repositories.NewConversationRepository(db)
 
 	providersConfigs, err := config.BuildProviderConfigs()
 	if err != nil {
@@ -64,7 +64,7 @@ func main() {
 	passwordService := authinfra.NewPasswordService()
 	authMiddleware := authinfra.NewAuthMiddleware(jwtService)
 	oauthService, err := authinfra.NewOAuth2Service(providersConfigs)
-	aiService := ai_service.NewGeminiAISuggestionService("gemini-1.5-flash") // to be loaded from config later
+	aiService := ai_service.NewGeminiAISuggestionService("gemini-1.5-flash", cfg.AIApiKey) // to be loaded from config later
 
 	textExtractor := utils.NewFileTextExtractor()
 
@@ -80,12 +80,14 @@ func main() {
 	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL, time.Second*10)
 	userUsecase := usecases.NewUserUsecase(userRepo, time.Second*10)
 	cvUsecase := usecases.NewCVUsecase(cvRepo, feedbackRepo, skiilGapRepo, aiService, textExtractor, time.Second*15)
+	chatUsecase := usecases.NewChatUsecase(chatRepo, groqClient, cfg)
 
-	// --- Job Matching Feature ---
-	jobRepo := repositories.NewJobRepository()
-	jobSuggestionService := job_service.NewJobSuggestionService(jobRepo)
-	jobUsecase := usecases.NewJobUsecase(jobSuggestionService)
-	jobController := controllers.NewJobController(jobUsecase)
+	// Job Matching Feature
+	jobRepo := job_service.NewJobService(cfg.JobDataApiKey)
+	jobChatRepo := repositories.NewJobChatRepository(db)
+	// If you still want to use the service layer, you can, but the usecase now expects repos and groqClient
+	jobUsecase := usecases.NewJobUsecase(jobRepo, jobChatRepo, groqClient)
+	jobController := controllers.NewJobController(jobUsecase, jobChatRepo, groqClient)
 
 	// Initialize controllers
 	otpController := controllers.NewOtpController(otpUsecase)
@@ -93,9 +95,10 @@ func main() {
 	userController := controllers.NewUserController(userUsecase)
 	oauthController := controllers.NewOAuth2Controller(oauthService, authUsecase)
 	cvController := controllers.NewCVController(cvUsecase)
+	chatController := controllers.NewChatController(chatUsecase)
 
 	// Setup router (add more controllers as you add features)
-	router := routes.SetupRouter(authMiddleware, userController, authController, otpController, oauthController, cvController, jobController)
+	router := routes.SetupRouter(authMiddleware, userController, authController, otpController, oauthController, cvController, chatController, jobController)
 
 	// Security: Add CORS and secure headers middleware
 	router.Use(func(c *gin.Context) {
