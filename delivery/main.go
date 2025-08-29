@@ -1,14 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/tsigemariamzewdu/JobMate-backend/delivery/controllers"
 	"github.com/tsigemariamzewdu/JobMate-backend/delivery/routes"
+	groqClient "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/ai"
 	authinfra "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/auth"
 	config "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/config"
 	mongoclient "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/db/mongo"
@@ -37,6 +38,7 @@ func main() {
 	otpRepo := repositories.NewOTPRepository(db)
 	authRepo := repositories.NewAuthRepository(db)
 	userRepo := repositories.NewUserRepository(db)
+	conversationRepo := repositories.NewConversationRepository(db)
 
 	providersConfigs, err := config.BuildProviderConfigs()
 	if err != nil {
@@ -59,19 +61,24 @@ func main() {
 		log.Fatalf("Failed to initialize OAuth2 service: %v", err)
 	}
 
+	// Initialize AI client
+	groqClient := groqClient.NewGroqClient(cfg)
+
 	// Initialize use case
 	otpUsecase := usecases.NewOTPUsecase(otpRepo, phoneValidator, otpSenderTyped)
 	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL, time.Second*10,)
 	userUsecase := usecases.NewUserUsecase(userRepo, time.Second*10)
+	chatUsecase := usecases.NewChatUsecase(conversationRepo, groqClient, cfg)
 
 	// Initialize controllers
 	otpController := controllers.NewOtpController(otpUsecase)
 	authController := controllers.NewAuthController(authUsecase)
 	userController := controllers.NewUserController(userUsecase)
 	oauthController := controllers.NewOAuth2Controller(oauthService, authUsecase)
+	chatController := controllers.NewChatController(chatUsecase)
 
 	// Setup router (add more controllers as you add features)
-	router := routes.SetupRouter(authMiddleware, userController, authController, otpController, oauthController)
+	router := routes.SetupRouter(authMiddleware, userController, authController, otpController, oauthController, chatController)
 
 	// Get port from config or environment variable
 	port := cfg.AppPort
