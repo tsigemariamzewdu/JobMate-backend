@@ -80,9 +80,9 @@ func (c *CVController) UploadCV(ctx *gin.Context) {
 		allowed := map[string]bool{
 			"application/pdf": true,
 		}
-		if !allowed[mime] && !strings.HasPrefix(mime, "text/plain") && ext != ".docx" {
+		if !allowed[mime] && ext != ".docx" {
 			ctx.JSON(http.StatusUnsupportedMediaType, utils.ErrorPayload(
-				"Only PDF, DOCX, or TXT allowed",
+				"Only PDF or DOCX files are allowed",
 				map[string]any{"detected": mime},
 			))
 			return
