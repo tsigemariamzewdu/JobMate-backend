@@ -1,21 +1,17 @@
-package utils
+package fileparser
 
 import (
-	// "bytes"
 	"fmt"
 	"io"
 	"log"
-
-	// "log"
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strings"
 
-	// "github.com/lu4p/cat"
 	"github.com/fumiama/go-docx"
+	"github.com/ledongthuc/pdf"
 	service "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
-	pdfparser "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/pdf_parser"
-	// "github.com/unidoc/unioffice/document"
 )
 
 type FileTextExtractor struct{}
@@ -28,38 +24,66 @@ func (e *FileTextExtractor) Extract(fileHeader *multipart.FileHeader) (string, e
 	ext := filepath.Ext(fileHeader.Filename)
 	switch ext {
 	case ".pdf":
-		file, err := fileHeader.Open()
-		if err != nil {
-			return "", err
-		}
-		defer file.Close()
-		return extractPDFText(file)
+		return extractPDFText(fileHeader)
 	case ".docx":
 		return extractDocxText(fileHeader)
-	case ".txt":
-		file, err := fileHeader.Open()
-		if err != nil {
-			return "", err
-		}
-		defer file.Close()
-		return extractTxtText(file)
 	default:
 		return "", fmt.Errorf("unsupported file type: %s", ext)
 	}
 }
 
-func extractPDFText(file multipart.File) (string, error) {
+func extractPDFText(fileHeader *multipart.FileHeader) (string, error) {
+	file, err := fileHeader.Open()
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
 	tmpPath, err := saveTempFile(file, "upload-*.pdf")
 	if err != nil {
 		return "", err
 	}
 	defer os.Remove(tmpPath)
 
-	text, err := pdfparser.ParsePDF(tmpPath)
+	f, r, err := pdf.Open(tmpPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to open PDF: %v", err)
 	}
-	return text, nil
+	defer f.Close()
+
+	var textBuilder strings.Builder
+	totalPage := r.NumPage()
+
+	for pageIndex := 1; pageIndex <= totalPage; pageIndex++ {
+		p := r.Page(pageIndex)
+		if p.V.IsNull() {
+			continue
+		}
+
+		rows, err := p.GetTextByRow()
+		if err != nil {
+			return "", fmt.Errorf("failed to extract text from page %d: %v", pageIndex, err)
+		}
+		if len(rows) == 0 {
+			continue
+		}
+
+		for _, row := range rows {
+			var rowText strings.Builder
+			prevX := -1.0
+			for _, word := range row.Content {
+				if prevX >= 0 && word.X-prevX > 1.5 {
+					rowText.WriteString(" ")
+				}
+				rowText.WriteString(word.S)
+				prevX = word.X + word.W
+			}
+			textBuilder.WriteString(strings.TrimSpace(rowText.String()) + "\n")
+		}
+		textBuilder.WriteString("\n")
+	}
+
+	return textBuilder.String(), nil
 }
 
 func extractDocxText(fileHeader *multipart.FileHeader) (string, error) {
@@ -104,36 +128,6 @@ func extractDocxText(fileHeader *multipart.FileHeader) (string, error) {
 
 	log.Print(text)
 	return text, nil
-}
-
-// func extractDocxText(file multipart.File) (string, error) {
-// 	tmp, err := saveTempFile(file, "upload-*.docx")
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	defer os.Remove(tmp)
-
-// 	doc, err := document.Open(tmp)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	var buf bytes.Buffer
-// 	for _, para := range doc.Paragraphs() {
-// 		for _, run := range para.Runs() {
-// 			buf.WriteString(run.Text())
-// 			buf.WriteString(" ")
-// 		}
-// 	}
-// 	return buf.String(), nil
-// }
-
-func extractTxtText(file multipart.File) (string, error) {
-	b, err := io.ReadAll(file)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
 }
 
 func saveTempFile(file multipart.File, pattern string) (string, error) {
