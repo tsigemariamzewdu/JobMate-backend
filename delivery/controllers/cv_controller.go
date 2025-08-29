@@ -120,16 +120,19 @@ func (c *CVController) AnalyzeCV(ctx *gin.Context) {
 
 	suggestions, err := c.cvUsecase.Analyze(ctx, cvID)
 	if err != nil {
-		if err == domain.ErrCVNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "CV not found"})
-			return
+		switch {
+		case errors.Is(err, domain.ErrInvalidCVID):
+			ctx.JSON(http.StatusBadRequest, utils.ErrorPayload("Invalid CV ID", nil))
+		case errors.Is(err, domain.ErrCVNotFound):
+			ctx.JSON(http.StatusNotFound, utils.ErrorPayload("CV not found", nil))
+		default:
+			ctx.JSON(http.StatusInternalServerError, utils.ErrorPayload("Failed to analyze CV", err.Error()))
 		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"cv_id":       cvID,
+	ctx.JSON(http.StatusOK, utils.SuccessPayload("CV analyzed successfully", gin.H{
+		"cvId":        cvID,
 		"suggestions": suggestions,
-	})
+	}))
 }
