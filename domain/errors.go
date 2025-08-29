@@ -46,6 +46,7 @@ var (
 
 	// Cv-related errors
 
-	ErrCVNotFound  = errors.New("cv not found")
-	ErrInvalidCVID = errors.New("invalid cv id")
+	ErrCVNotFound     = errors.New("cv not found")
+	ErrInvalidCVID    = errors.New("invalid cv id")
+	ErrCVUpdateFailed = errors.New("cv update failed")
 )

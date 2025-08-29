@@ -3,10 +3,12 @@ package usecases
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"mime/multipart"
 	"time"
 
+	"github.com/tsigemariamzewdu/JobMate-backend/domain"
 	repo "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/repositories"
 
 	service "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
@@ -82,19 +84,18 @@ func (uc *CVUsecase) Analyze(ctx context.Context, cvID string) (*model.AISuggest
 	c, cancel := context.WithTimeout(ctx, uc.timeout)
 	defer cancel()
 
-	// Get CV
 	cv, err := uc.cvRepo.GetByID(c, cvID)
 	if err != nil {
 		return nil, err
 	}
 
-	//  Generate AI suggestions
+	// Generate AI suggestions
 	suggestions, err := uc.aiService.Analyze(c, cv.OriginalText)
 	if err != nil {
 		return nil, err
 	}
 
-	//  Update CV
+	// Update CV
 	cv.ExtractedSkills = suggestions.CVs.ExtractedSkills
 	cv.ExtractedExperience = suggestions.CVs.ExtractedExperience
 	cv.ExtractedEducation = suggestions.CVs.ExtractedEducation
@@ -102,10 +103,10 @@ func (uc *CVUsecase) Analyze(ctx context.Context, cvID string) (*model.AISuggest
 	cv.UpdatedAt = time.Now()
 
 	if err := uc.cvRepo.Update(c, cv); err != nil {
-		return nil, err
+		return nil, domain.ErrCVUpdateFailed
 	}
 
-	//  Save feedback
+	// Save feedback
 	feedback := &model.CVFeedback{
 		UserID:                 cv.UserID,
 		CVID:                   cv.ID,
@@ -114,9 +115,12 @@ func (uc *CVUsecase) Analyze(ctx context.Context, cvID string) (*model.AISuggest
 		ImprovementSuggestions: suggestions.CVFeedback.ImprovementSuggestions,
 		GeneratedAt:            time.Now(),
 	}
-	_, _ = uc.feedbackRepo.Create(c, feedback)
 
-	//  Save skill gaps
+	if _, err := uc.feedbackRepo.Create(c, feedback); err != nil {
+		log.Printf("failed to save CV feedback: %v", err)
+	}
+
+	// Save skill gaps
 	var gaps []*model.SkillGap
 	for _, g := range suggestions.SkillGaps {
 		gaps = append(gaps, &model.SkillGap{
@@ -130,8 +134,11 @@ func (uc *CVUsecase) Analyze(ctx context.Context, cvID string) (*model.AISuggest
 			UpdatedAt:              time.Now(),
 		})
 	}
+
 	if len(gaps) > 0 {
-		_ = uc.skillGapRepo.CreateMany(c, gaps)
+		if err := uc.skillGapRepo.CreateMany(c, gaps); err != nil {
+			log.Printf("failed to save skill gaps: %v", err)
+		}
 	}
 
 	return suggestions, nil
