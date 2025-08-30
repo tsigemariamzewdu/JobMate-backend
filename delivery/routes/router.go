@@ -29,7 +29,7 @@ func SetupRouter(authMiddleware *auth.AuthMiddleware,
 
 	// Auth routes
 	authGroup := router.Group("/auth")
-	NewAuthRouter(*authController, *authGroup)
+	NewAuthRouter(*authController, authMiddleware,*authGroup)
 
 	RegisterOAuthRoutes(router, oauthController)
 
@@ -64,11 +64,11 @@ func registerUserRoutes(router *gin.Engine, authMiddleware *auth.AuthMiddleware,
 	router.POST("/auth/refresh", authController.RefreshToken)
 }
 
-func NewAuthRouter(authController controllers.AuthController, group gin.RouterGroup) {
+func NewAuthRouter(authController controllers.AuthController, authMiddleware *auth.AuthMiddleware, group gin.RouterGroup) {
 
 	group.POST("/register", authController.Register)
 	group.POST("/login", authController.Login)
-	group.POST("/logout", authController.Logout)
+	group.POST("/logout", authMiddleware.Middleware(),authController.Logout)
 }
 
 func NewCVRouter(cvController controllers.CVController, group gin.RouterGroup) {
