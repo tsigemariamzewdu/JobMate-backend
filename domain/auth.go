@@ -34,7 +34,7 @@ type IAuthUsecase interface {
 	// RefreshToken validates the provided refresh token, invalidates it,
 	// and issues a new access token and a new refresh token.
 	// It returns the new access token, new refresh token, access token duration, and an error.
-	RefreshToken(ctx context.Context, refreshToken string) (*string, *string, time.Duration, error)
+	RefreshToken(ctx context.Context, refreshToken string) ( *string, time.Duration, error)
 
 
 

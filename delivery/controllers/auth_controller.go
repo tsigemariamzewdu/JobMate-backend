@@ -184,37 +184,19 @@ func (au *AuthController) RefreshToken(c *gin.Context) {
 	}
 
 	// Call the use case with the refresh token.
-	newAccessToken, newRefreshToken, expiresIn, err := au.AuthUsecase.RefreshToken(c, refreshToken)
+	newAccessToken, expiresIn, err := au.AuthUsecase.RefreshToken(c, refreshToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token or session expired"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err})
 		return
 	}
 
-	// Set the new access token in an HTTP-only cookie.
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "access_token",
-		Value:    *newAccessToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true, // Should be true in production
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(expiresIn.Seconds()),
-	})
+	
 
-	// Set the new refresh token in a separate HTTP-only cookie.
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    *newRefreshToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true, 
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int((60 * 24 * time.Hour).Seconds()),
-	})
 
 	// Return a success response to the client.
 	c.JSON(http.StatusOK, gin.H{
 		"message":    "Token refreshed successfully",
+		"access_token": newAccessToken,
 		"expires_in": int(expiresIn.Seconds()),
 	})
 }
