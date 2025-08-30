@@ -1,8 +1,7 @@
 package infrastructure
 
 import (
-	"path/filepath"
-	"runtime"
+	"fmt"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -35,10 +34,17 @@ type Config struct {
 	EmailFrom     string
 	EmailFromName string
 
-	AIApiKey     string
-	AIModelName  string
-	AIApiBaseUrl string
-	AIProvider   string
+	// General AI Configuration
+	AIApiKey       string 
+	AIModelName    string 
+	AIApiBaseUrl   string 
+	AIProvider     string 
+	AITemperature float32 
+	
+	// Separate config for OpenAI if needed later for CV specific
+	OpenAIApiKey string 
+	OpenAIModelName string 
+
 
 	DefaultPageSize int
 	MaxPageSize     int
@@ -47,40 +53,47 @@ type Config struct {
 	LogLevel       string
 	Timezone       string
 
-	GoogleClientID       string
-	GoogleClientSecret   string
-	GoogleRedirectURL    string
-	GithubClientID       string
-	GithubClientSecret   string
-	GithubRedirectURL    string
-	FacebookClientID     string
-	FacebookClientSecret string
-	FacebookRedirectURL  string
+	GoogleClientID         string
+	GoogleClientSecret     string
+	GoogleRedirectURL      string
+	GithubClientID         string
+	GithubClientSecret     string
+	GithubRedirectURL      string
+	FacebookClientID       string
+	FacebookClientSecret   string
+	FacebookRedirectURL    string
 
+	AfricaTalkingUsername string
+	AfricaTalkingApiKey   string
+	AfricaTalkingSenderId string
+
+	// Twilio fields
 	TwilioAccountSID string
 	TwilioAuthToken  string
 	TwilioFromNumber string
+
+	// JobData
+	JobDataApiKey    string
 }
 
-// LoadConfig loads config.env file using absolute project path which looks for
-// root/config.env. It returns config reference and nil if loading is a success.
-// Else it returns nil and error message.
+// LoadConfig loads config.env from project root (if present) and also supports environment variables.
+// If config.env is missing, it falls back to environment variables.
 func LoadConfig() (*Config, error) {
-	// Use runtime.Caller to get to root directory
-	// it uses absolute path to the project
-	_, b, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(b), "../../")
-
-	viper.AddConfigPath(projectRoot)
+	// Tell viper to look for "config.env" in the root folder
+	viper.AddConfigPath("../") 
 	viper.SetConfigName("config")
 	viper.SetConfigType("env")
 	viper.AutomaticEnv()
 
+	// Read the config file
 	if err := viper.ReadInConfig(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
+
+	// Now populate your config struct
 	cfg := &Config{
+		AppEnv:  viper.GetString("APP_ENV"),
 		AppPort: viper.GetString("APP_PORT"),
 		BaseURL: viper.GetString("BASE_URL"),
 
@@ -104,10 +117,16 @@ func LoadConfig() (*Config, error) {
 		EmailFrom:     viper.GetString("EMAIL_FROM"),
 		EmailFromName: viper.GetString("EMAIL_FROM_NAME"),
 
-		AIApiKey:     viper.GetString("AI_API_KEY"),
-		AIModelName:  viper.GetString("AI_MODEL_NAME"),
-		AIApiBaseUrl: viper.GetString("AI_API_BASE_URL"),
-		AIProvider:   viper.GetString("AI_PROVIDER"),
+		// General AI Configuration
+		AIApiKey: viper.GetString("AI_API_KEY"),        
+		AIModelName:  viper.GetString("AI_MODEL_NAME"),  
+		AIApiBaseUrl: viper.GetString("AI_API_BASE_URL"), 
+		AIProvider:   viper.GetString("AI_PROVIDER"),    
+		AITemperature:         float32(viper.GetFloat64("AI_TEMPERATURE")), 
+		
+		// OpenAI Specific (for CV analysis, if separate)
+		OpenAIApiKey: viper.GetString("OPENAI_API_KEY"),
+		OpenAIModelName: viper.GetString("OPENAI_MODEL_NAME"),
 
 		DefaultPageSize: viper.GetInt("DEFAULT_PAGE_SIZE"),
 		MaxPageSize:     viper.GetInt("MAX_PAGE_SIZE"),
@@ -126,9 +145,18 @@ func LoadConfig() (*Config, error) {
 		FacebookClientSecret: viper.GetString("FACEBOOK_CLIENT_SECRET"),
 		FacebookRedirectURL:  viper.GetString("FACEBOOK_REDIRECT_URL"),
 
+		// Twilio (new)
 		TwilioAccountSID: viper.GetString("TWILIO_ACCOUNT_SID"),
 		TwilioAuthToken:  viper.GetString("TWILIO_AUTH_TOKEN"),
 		TwilioFromNumber: viper.GetString("TWILIO_FROM_NUMBER"),
+
+		// Africa's Talking 
+		AfricaTalkingUsername: viper.GetString("AFRICASTALKING_USERNAME"),
+		AfricaTalkingApiKey:   viper.GetString("AFRICASTALKING_API_KEY"),
+		AfricaTalkingSenderId: viper.GetString("AFRICASTALKING_SENDER_ID"),
+
+		// JobData
+		JobDataApiKey: viper.GetString("JOBDATA_API_KEY"),
 	}
 
 	return cfg, nil

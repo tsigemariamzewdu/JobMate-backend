@@ -5,7 +5,8 @@ import "time"
 // OTPRequest represents the input for requesting an OTP
 // (business logic only, not for transport)
 type OTPRequest struct {
-    Phone       string
+    Phone       *string
+    Email       *string
     RequestorIP string // for rate limiting
 }
 
@@ -13,7 +14,8 @@ type OTPRequest struct {
 type UserVerificationCode struct {
     ID         string
     UserID     *string
-    Phone      string
+    Phone      *string
+    Email      *string
     CodeHash   string // store hashed code
     Type       string // e.g., 'registration', 'password_reset'
     ExpiresAt  time.Time

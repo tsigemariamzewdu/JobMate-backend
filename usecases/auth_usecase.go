@@ -2,28 +2,34 @@ package usecases
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"regexp"
+
 	"time"
 	"unicode"
 
 	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	repo "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/repositories"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthUsecase struct {
 	AuthRepo        domain.IAuthRepository
+	OTPRepo        repo.IOTPRepository      
 	PasswordService domain.IPasswordService
 	JWTService      domain.IJWTService
+	EmailService    domain.IEmailService
 	BaseURL         string
 	ContextTimeout  time.Duration
 }
 
-func NewAuthUsecase(repo domain.IAuthRepository, ps domain.IPasswordService, jw domain.IJWTService, bs string, timeout time.Duration) domain.IAuthUsecase {
+func NewAuthUsecase(repo domain.IAuthRepository, ps domain.IPasswordService, jw domain.IJWTService, bs string,OTPRepo repo.IOTPRepository , timeout time.Duration) domain.IAuthUsecase {
 	return &AuthUsecase{
 		AuthRepo:        repo,
 		PasswordService: ps,
 		JWTService:      jw,
 		BaseURL:         bs,
+		OTPRepo: OTPRepo,
 		ContextTimeout:  timeout,
 	}
 }
@@ -45,11 +51,7 @@ func (uc *AuthUsecase) Register(ctx context.Context, input *domain.User, oauthUs
 		}
 	}
 
-	// email format validation
-	if !validateEmail(*email) {
-		return nil, fmt.Errorf("%w", domain.ErrInvalidEmailFormat)
-	}
-
+	
 	// check if email already exists
 	count, err := uc.AuthRepo.CountByEmail(ctx, *email)
 	if err != nil {
@@ -59,22 +61,52 @@ func (uc *AuthUsecase) Register(ctx context.Context, input *domain.User, oauthUs
 		return nil, fmt.Errorf("%w", domain.ErrEmailAlreadyExists)
 	}
 
-	// check if phone already exists
-	var phone *string
-	if input != nil {
-		phone = input.Phone
-	} else if oauthUser != nil {
-		phone = oauthUser.Phone
-	}
-	if phone != nil {
-		count, err = uc.AuthRepo.CountByPhone(ctx, *phone)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %v", domain.ErrDatabaseOperationFailed, err)
-		}
-		if count > 0 {
-			return nil, fmt.Errorf("%w", domain.ErrPhoneAlreadyExists)
-		}
-	}
+	
+    // OTP verification (only for normal registration, not OAuth)
+if oauthUser == nil {
+    if input.OTP == nil {
+        return nil, fmt.Errorf("%w", errors.New("input otp is empty "))
+    }
+
+    // fetch latest OTP for email - FIXED: Use GetLatestCodeByEmail instead of GetRecentRequestsByEmail
+    code, err := uc.OTPRepo.GetLatestCodeByEmail(ctx, *email)
+    if err != nil {
+        return nil, fmt.Errorf("%w: %v", domain.ErrDatabaseOperationFailed, err)
+    }
+    if code == nil {
+        return nil, fmt.Errorf("%w", errors.New("error getting the latest code by email"))
+    }
+
+    if code.Used || time.Now().After(code.ExpiresAt) {
+        return nil, fmt.Errorf("%w", domain.ErrOTPExpired)
+    }
+
+    if err := bcrypt.CompareHashAndPassword([]byte(code.CodeHash), []byte(*input.OTP)); err != nil {
+        return nil, fmt.Errorf("%w", domain.ErrInvalidOTP)
+    }
+
+    // mark OTP as used - FIXED: Method name should be MarkCodeAsUsed
+    if err := uc.OTPRepo.MarkCodeAsUsed(ctx, code.ID); err != nil {
+        return nil, fmt.Errorf("%w: %v", domain.ErrOTPUseFailed, err)
+    }
+}
+
+	// // check if phone already exists
+	// var phone *string
+	// if input != nil {
+	// 	phone = input.Phone
+	// } else if oauthUser != nil {
+	// 	phone = oauthUser.Phone
+	// }
+	// if phone != nil {
+	// 	count, err = uc.AuthRepo.CountByPhone(ctx, *phone)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("%w: %v", domain.ErrDatabaseOperationFailed, err)
+	// 	}
+	// 	if count > 0 {
+	// 		return nil, fmt.Errorf("%w", domain.ErrPhoneAlreadyExists)
+	// 	}
+	// }
 
 	var hashedPassword *string
 	if oauthUser == nil {
@@ -91,6 +123,7 @@ func (uc *AuthUsecase) Register(ctx context.Context, input *domain.User, oauthUs
 		LastName:  chooseNonEmpty(get(input, func(u *domain.User) *string { return u.LastName }), get(oauthUser, func(u *domain.User) *string { return u.LastName })),
 
 		Email:          email,
+		IsVerified: true,
 		Password:       hashedPassword,
 		ProfilePicture: oauthUserPicture(oauthUser),
 		Provider:       oauthUserProvider(oauthUser),
@@ -103,6 +136,8 @@ func (uc *AuthUsecase) Register(ctx context.Context, input *domain.User, oauthUs
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", domain.ErrUserCreationFailed, err)
 	}
+	
+
 
 	return &newUser, nil
 }
@@ -132,13 +167,13 @@ func (uc *AuthUsecase) Login(ctx context.Context, input *domain.User) (*domain.L
 	}
 
 	// check if email is verified
-	isVerified, err := uc.AuthRepo.IsEmailVerified(ctx, user.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("%w", domain.ErrEmailVerficationFailed)
-	}
-	if !isVerified {
-		return nil, fmt.Errorf("%w", domain.ErrEmailNotVerified)
-	}
+	// isVerified, err := uc.AuthRepo.IsEmailVerified(ctx, user.UserID)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("%w", domain.ErrEmailVerficationFailed)
+	// }
+	// if !isVerified {
+	// 	return nil, fmt.Errorf("%w", domain.ErrEmailNotVerified)
+	// }
 
 	// compare passwords
 	if user.Password == nil || !uc.PasswordService.ComparePassword(*user.Password, *input.Password) {
@@ -351,13 +386,6 @@ func (uc *AuthUsecase) RefreshToken(ctx context.Context, userID string) (*string
 	return &newAccessToken, &newRefreshToken, time.Duration(expiryTime), nil
 }
 
-//function to validate email
-
-func validateEmail(email string) bool {
-	re := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	return re.MatchString(email)
-
-}
 
 // function to validate password strength
 
@@ -381,22 +409,4 @@ func validatePasswordStrength(password string) bool {
 	return hasLetter && hasNumber
 }
 
-//function to generate verification email body
 
-func generateVerificationEmailBody(verificationLink string) string {
-	return fmt.Sprintf(`
-    <html>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h2>Welcome!</h2>
-        <p>Thanks for signing up. Please verify your email address by clicking the link below.</p>
-        <p>This is a one-time link and may expire soon.</p>
-        <p>
-          <a href="%s" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50;
-          color: white; text-decoration: none; border-radius: 4px;">Verify Email</a>
-        </p>
-        <p>If you didn’t request this, feel free to ignore this email.</p>
-        <p>— The Team</p>
-      </body>
-    </html>
-  `, verificationLink)
-}
