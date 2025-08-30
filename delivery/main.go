@@ -18,7 +18,8 @@ import (
 	"github.com/tsigemariamzewdu/JobMate-backend/infrastructure/job_service"
 
 	mongoclient "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/db/mongo"
-	utils "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/util"
+	// utils "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/util"
+	file_parser "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/file_parser"
 	"github.com/tsigemariamzewdu/JobMate-backend/repositories"
 	"github.com/tsigemariamzewdu/JobMate-backend/usecases"
 )
@@ -71,7 +72,7 @@ func main() {
 	oauthService, err := authinfra.NewOAuth2Service(providersConfigs)
 	aiService := ai_service.NewGeminiAISuggestionService("gemini-1.5-flash", cfg.AIApiKey) // to be loaded from config later
 
-	textExtractor := utils.NewFileTextExtractor()
+	textExtractor := file_parser.NewFileTextExtractor()
 
 	if err != nil {
 		log.Fatalf("Failed to initialize OAuth2 service: %v", err)

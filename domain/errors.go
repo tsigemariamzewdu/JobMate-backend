@@ -46,6 +46,10 @@ var (
 
 	// Cv-related errors
 
+
+
+	ErrCVUpdateFailed = errors.New("cv update failed")
+
 	ErrCVNotFound  = errors.New("cv not found")
 	ErrInvalidCVID = errors.New("invalid cv id")
 
@@ -54,4 +58,5 @@ var (
 	ErrOTPExpired=errors.New("otp is expired")
 	ErrInvalidOTP=errors.New("otp is invalid")
 	ErrOTPUseFailed=errors.New("otp has failed ")
+
 )

@@ -91,6 +91,7 @@ func (r *cvRepository) Create(ctx context.Context, cv *models.CV) (string, error
 
 	return model.ID.Hex(), nil
 }
+
 func (r *cvRepository) GetByID(ctx context.Context, id string) (*models.CV, error) {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
