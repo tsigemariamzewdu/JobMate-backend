@@ -29,6 +29,7 @@ type User struct {
 	UserID            string
 	// OauthID           int
 	Phone             *string
+	
 	IsVerified        bool
 	Email             *string
 	FirstName         *string
@@ -44,6 +45,7 @@ type User struct {
 	ProfilePicture    *string
 	RefreshToken   	  *string
 	AccessToken       *string
+	OTP               *string
 	// LastActiveAt      time.Time
 	CreatedAt         time.Time
 	UpdatedAt         time.Time

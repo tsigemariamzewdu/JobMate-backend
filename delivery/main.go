@@ -10,10 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tsigemariamzewdu/JobMate-backend/delivery/controllers"
 	"github.com/tsigemariamzewdu/JobMate-backend/delivery/routes"
-	groqClient "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/ai"
+	groqpkg "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/ai"
 	"github.com/tsigemariamzewdu/JobMate-backend/infrastructure/ai_service"
 	authinfra "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/auth"
 	config "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/config"
+	emailinfra "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/email"
 	"github.com/tsigemariamzewdu/JobMate-backend/infrastructure/job_service"
 
 	mongoclient "github.com/tsigemariamzewdu/JobMate-backend/infrastructure/db/mongo"
@@ -45,8 +46,9 @@ func main() {
 	userRepo := repositories.NewUserRepository(db)
 	cvRepo := repositories.NewCVRepository(db)
 	feedbackRepo := repositories.NewFeedbackRepository(db)
-	skiilGapRepo := repositories.NewSkillGapRepository(db)
-	chatRepo := repositories.NewConversationRepository(db)
+	skillGapRepo := repositories.NewSkillGapRepository(db)
+	// use the name conversationRepo because feature branch used it
+	conversationRepo := repositories.NewConversationRepository(db)
 
 	providersConfigs, err := config.BuildProviderConfigs()
 	if err != nil {
@@ -55,6 +57,9 @@ func main() {
 
 	// Initialize services
 	phoneValidator := &authinfra.PhoneValidatorImpl{}
+	// email service (feature branch addition)
+	emailService := emailinfra.NewSMTPService(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUsername, cfg.SMTPPassword, cfg.EmailFrom)
+
 	otpSender, err := authinfra.NewOTPSenderFromEnv(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize OTP sender: %v", err)
@@ -72,20 +77,23 @@ func main() {
 		log.Fatalf("Failed to initialize OAuth2 service: %v", err)
 	}
 
-	// Initialize AI client
-	groqClient := groqClient.NewGroqClient(cfg)
+	// Initialize AI client (avoid alias/variable collision)
+	groqClient := groqpkg.NewGroqClient(cfg)
 
-	// Initialize use case
-	otpUsecase := usecases.NewOTPUsecase(otpRepo, phoneValidator, otpSenderTyped)
-	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL, time.Second*10)
+	// Initialize use cases
+	// Feature branch expected emailService as an extra arg for NewOTPUsecase
+	otpUsecase := usecases.NewOTPUsecase(otpRepo, phoneValidator, otpSenderTyped, emailService)
+	// Feature branch expected otpRepo in the auth usecase constructor
+	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL, otpRepo, time.Second*10)
 	userUsecase := usecases.NewUserUsecase(userRepo, time.Second*10)
-	cvUsecase := usecases.NewCVUsecase(cvRepo, feedbackRepo, skiilGapRepo, aiService, textExtractor, time.Second*15)
-	chatUsecase := usecases.NewChatUsecase(chatRepo, groqClient, cfg)
+
+	cvUsecase := usecases.NewCVUsecase(cvRepo, feedbackRepo, skillGapRepo, aiService, textExtractor, time.Second*15)
+	chatUsecase := usecases.NewChatUsecase(conversationRepo, groqClient, cfg)
 
 	// Job Matching Feature
 	jobRepo := job_service.NewJobService(cfg.JobDataApiKey)
 	jobChatRepo := repositories.NewJobChatRepository(db)
-	// If you still want to use the service layer, you can, but the usecase now expects repos and groqClient
+	// usecase expects job service and jobChatRepo + groq client
 	jobUsecase := usecases.NewJobUsecase(jobRepo, jobChatRepo, groqClient)
 	jobController := controllers.NewJobController(jobUsecase, jobChatRepo, groqClient)
 

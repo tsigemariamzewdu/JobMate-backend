@@ -104,7 +104,7 @@ type IAuthRepository interface {
 	UpdateTokens(c context.Context, userID string, accessToken string, refreshToken string) error
 
 	// IsEmailVerified checks if the user's email is verified.
-	IsEmailVerified(c context.Context, userID string) (bool, error)
+	// IsEmailVerified(c context.Context, userID string) (bool, error)
 }
 
 //PasswordService Interface

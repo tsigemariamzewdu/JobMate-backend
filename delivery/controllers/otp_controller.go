@@ -34,13 +34,13 @@ func (c *OtpController) RequestOTP(ctx *gin.Context) {
         // log it but don’t expose to client
         fmt.Printf("failed to send OTP: %v\n", err)
     }
-    ctx.JSON(http.StatusOK, dto.OTPResponseDTO{Message: "If this phone exists, a code was sent"})
+    ctx.JSON(http.StatusOK, dto.OTPResponseDTO{Message: "If this email exists, a code was sent"})
 
 }
 
 func dtoToDomainOTPRequest(req dto.OTPRequestDTO, ip string) models.OTPRequest {
     return models.OTPRequest{
-        Phone: req.Phone,
+        Email: req.Email,
         RequestorIP: ip,
     }
 }
