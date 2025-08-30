@@ -315,52 +315,60 @@ func (uc *AuthUsecase) Logout(ctx context.Context, userID string,token string) e
 }
 
 
-// refresh token
-func (uc *AuthUsecase) RefreshToken(ctx context.Context, userID string) (*string, *string, time.Duration, error) {
-	emptyToken := ""
+func (uc *AuthUsecase) RefreshToken(ctx context.Context, incomingToken string) (*string, time.Duration, error) {
+    emptyToken := ""
 
-	if userID == "" {
-		return &emptyToken, &emptyToken, 0, fmt.Errorf("%w", domain.ErrInvalidInput)
-	}
+    if incomingToken == "" {
+        return &emptyToken, 0, fmt.Errorf("%w", domain.ErrInvalidInput)
+    }
 
-	user, err := uc.AuthRepo.FindByID(ctx, userID)
-	if err != nil {
-		return &emptyToken, &emptyToken, 0, domain.ErrDatabaseOperationFailed
-	}
+    // Find the refresh token in DB
+    storedToken, err := uc.AuthRepo.FindRefreshToken(ctx, incomingToken)
+    if err != nil {
+        return &emptyToken, 0, domain.ErrTokenVerificationFailed
+    }
 
-	if user.RefreshToken == nil {
-		return &emptyToken, &emptyToken, 0, domain.ErrInvalidInput
-	}
+    // Check if revoked or expired
+    if storedToken.IsRevoked || storedToken.ExpiresAt.Before(time.Now()) {
+        return &emptyToken, 0, domain.ErrTokenVerificationFailed
+    }
 
-	userIDFromToken, err := uc.JWTService.ValidateRefreshToken(*user.RefreshToken)
-	if err != nil {
-		return &emptyToken, &emptyToken, 0, domain.ErrTokenVerificationFailed
-	}
+    // Fetch user
+    user, err := uc.AuthRepo.FindByID(ctx, *storedToken.UserID)
+    if err != nil {
+        return &emptyToken, 0, domain.ErrDatabaseOperationFailed
+    }
 
-	lang := "en"
-	if user.PreferredLanguage != nil {
-		lang = string(*user.PreferredLanguage)
-	}
-	newAccessToken, expiryTime, err := uc.JWTService.GenerateAccessToken(userIDFromToken, lang)
-	if err != nil {
-		return &emptyToken, &emptyToken, 0, domain.ErrTokenGenerationFailed
-	}
+    lang := "en"
+    if user.PreferredLanguage != nil {
+        lang = string(*user.PreferredLanguage)
+    }
 
-	newRefreshToken, err := uc.JWTService.GenerateRefreshToken(userIDFromToken)
-	if err != nil {
-		return &emptyToken, &emptyToken, 0, domain.ErrTokenGenerationFailed
-	}
+    // Generate new access token
+    newAccessToken, expiryTime, err := uc.JWTService.GenerateAccessToken(user.UserID, lang)
+    if err != nil {
+        return &emptyToken, 0, domain.ErrTokenGenerationFailed
+    }
 
-	user.AccessToken = &newAccessToken
-	user.RefreshToken = &newRefreshToken
-	user.UpdatedAt = time.Now()
+    // Optionally, rotate refresh token
+    newRefreshToken, err := uc.JWTService.GenerateRefreshToken(user.UserID)
+    if err != nil {
+        return &emptyToken, 0, domain.ErrTokenGenerationFailed
+    }
 
-	err = uc.AuthRepo.UpdateUser(ctx, user)
-	if err != nil {
-		return &emptyToken, &emptyToken, 0, domain.ErrDatabaseOperationFailed
-	}
+    // Save the new refresh token and revoke the old one
+    err = uc.AuthRepo.SaveRefreshToken(ctx, user.UserID, newRefreshToken)
+    if err != nil {
+        return &emptyToken, 0, domain.ErrDatabaseOperationFailed
+    }
 
-	return &newAccessToken, &newRefreshToken, time.Duration(expiryTime), nil
+    // Revoke the old refresh token
+    err = uc.AuthRepo.FindAndInvalidate(ctx, user.UserID, incomingToken)
+    if err != nil {
+        return &emptyToken, 0, domain.ErrDatabaseOperationFailed
+    }
+
+    return &newAccessToken, expiryTime, nil
 }
 
 
