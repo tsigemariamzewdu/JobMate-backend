@@ -116,14 +116,17 @@ func (ac *AuthController) Login(c *gin.Context) {
 		"firstName": result.User.FirstName,
 		"lastName":  result.User.LastName,
 		"provider":  result.User.Provider,
+		"acces_token":result.AccessToken,
 	}
 
+	
+
 	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "auth_token",
-		Value:    result.AccessToken,
+		Name:     "refresh_token",
+		Value:    result.RefreshToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(result.ExpiresIn.Seconds()),
 	})
@@ -138,20 +141,28 @@ func (ac *AuthController) Login(c *gin.Context) {
 func (au *AuthController) Logout(c *gin.Context) {
 	// get the user id
 	userID := c.GetString("userID")
+
+	//get refresh token from cookie
+	token, err := c.Cookie("refresh_token")
+
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to fetch userID"})
 		return
 	}
+	if err != nil || token == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "missing refresh token"})
+        return
+    }
 
-	err := au.AuthUsecase.Logout(c, userID)
+	err = au.AuthUsecase.Logout(c, userID,token)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to log user out", "details": err.Error()})
 		return
 	}
 
-	// delete the authentication cookie after logout
+	
 	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "auth_token",
+		Name:     "refresh_token",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,

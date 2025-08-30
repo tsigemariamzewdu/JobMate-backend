@@ -147,15 +147,13 @@ if oauthUser == nil {
 // Login handles user login usecase
 func (uc *AuthUsecase) Login(ctx context.Context, input *domain.User) (*domain.LoginResult, error) {
 
-	// find user by email or username
+	// find user by email 
 	var user *domain.User
 	var err error
 
 	if validateEmail(*input.Email) {
 		user, err = uc.AuthRepo.FindByEmail(ctx, *input.Email)
-	} else {
-		user, err = uc.AuthRepo.FindByPhone(ctx, *input.Phone)
-	}
+	} 
 
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", domain.ErrInvalidCredentials, err)
@@ -165,15 +163,6 @@ func (uc *AuthUsecase) Login(ctx context.Context, input *domain.User) (*domain.L
 	if user.Provider != "" {
 		return nil, fmt.Errorf("%w", domain.ErrOAuthUserCannotLoginWithPassword)
 	}
-
-	// check if email is verified
-	// isVerified, err := uc.AuthRepo.IsEmailVerified(ctx, user.UserID)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("%w", domain.ErrEmailVerficationFailed)
-	// }
-	// if !isVerified {
-	// 	return nil, fmt.Errorf("%w", domain.ErrEmailNotVerified)
-	// }
 
 	// compare passwords
 	if user.Password == nil || !uc.PasswordService.ComparePassword(*user.Password, *input.Password) {
@@ -202,9 +191,9 @@ func (uc *AuthUsecase) Login(ctx context.Context, input *domain.User) (*domain.L
 	user.UpdatedAt = time.Now()
 
 	// update the user (save the tokens into database)
-	err = uc.AuthRepo.UpdateTokens(ctx, user.UserID, accessToken, refreshToken)
+	err = uc.AuthRepo.SaveRefreshToken(ctx, user.UserID, refreshToken)
 	if err != nil {
-		return nil, domain.ErrDatabaseOperationFailed
+		return nil, err
 	}
 	result := domain.LoginResult{
 		AccessToken:  accessToken,
@@ -310,33 +299,21 @@ func oauthUserProvider(oauthUser *domain.User) string {
 	return oauthUser.Provider
 }
 
-// logout usecase
-func (uc *AuthUsecase) Logout(ctx context.Context, userID string) error {
-
-	//check if empty
+// Logout invalidates a user's refresh token so they cannot refresh their session.
+func (uc *AuthUsecase) Logout(ctx context.Context, userID string,token string) error {
 	if userID == "" {
-		return fmt.Errorf("%w", domain.ErrInvalidUserID)
+		return domain.ErrInvalidInput
 	}
 
-	//find the users refresh token from db
-
-	user, err := uc.AuthRepo.FindByID(ctx, userID)
-	if err != nil {
-		return fmt.Errorf("%w", domain.ErrDatabaseOperationFailed)
-	}
-	//make the refresh token null
-	user.RefreshToken = nil
-
-	user.UpdatedAt = time.Now()
-
-	//update the user
-	err = uc.AuthRepo.UpdateUser(ctx, user)
+	// Revoke/delete the token instead of touching the user record
+	err := uc.AuthRepo.FindAndInvalidate(ctx, userID, token)
 	if err != nil {
 		return domain.ErrDatabaseOperationFailed
 	}
 
 	return nil
 }
+
 
 // refresh token
 func (uc *AuthUsecase) RefreshToken(ctx context.Context, userID string) (*string, *string, time.Duration, error) {

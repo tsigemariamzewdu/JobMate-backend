@@ -29,7 +29,7 @@ type IAuthUsecase interface {
 
 	// Logout logs out a user by invalidating their session or deleting the stored refresh token.
 	// This ensures the user can no longer refresh their access token.
-	Logout(ctx context.Context, userID string) error
+	Logout(ctx context.Context, userID string,token string) error
 	
 	// RefreshToken validates the provided refresh token, invalidates it,
 	// and issues a new access token and a new refresh token.
