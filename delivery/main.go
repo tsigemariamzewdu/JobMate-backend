@@ -85,7 +85,7 @@ func main() {
 	// Feature branch expected emailService as an extra arg for NewOTPUsecase
 	otpUsecase := usecases.NewOTPUsecase(otpRepo, phoneValidator, otpSenderTyped, emailService)
 	// Feature branch expected otpRepo in the auth usecase constructor
-	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL, otpRepo, time.Second*10)
+	authUsecase := usecases.NewAuthUsecase(authRepo, passwordService, jwtService, cfg.BaseURL, otpRepo, time.Second*10,emailService)
 	userUsecase := usecases.NewUserUsecase(userRepo, time.Second*10)
 
 	cvUsecase := usecases.NewCVUsecase(cvRepo, feedbackRepo, skillGapRepo, aiService, textExtractor, time.Second*15)

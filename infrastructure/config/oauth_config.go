@@ -1,17 +1,18 @@
 package infrastructure
 
 import (
-	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	
+	interfaces "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
 	"golang.org/x/oauth2/google"
 )
 
-func BuildProviderConfigs() (map[string]domain.OAuth2ProviderConfig, error) {
+func BuildProviderConfigs() (map[string]interfaces.OAuth2ProviderConfig, error) {
 	configs, err := LoadConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	return map[string]domain.OAuth2ProviderConfig{
+	return map[string]interfaces.OAuth2ProviderConfig{
 		"google": {
 			ClientID:     configs.GoogleClientID,
 			ClientSecret: configs.GoogleClientSecret,
