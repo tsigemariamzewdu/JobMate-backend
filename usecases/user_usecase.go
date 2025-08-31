@@ -6,22 +6,26 @@ import (
 	"time"
 
 	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	"github.com/tsigemariamzewdu/JobMate-backend/domain/models"
+	uc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/usecases"
+	repo "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/repositories"
+
 )
 
 type UserUsecase struct {
-	userRepository domain.IUserRepository
+	userRepository repo.IUserRepository
 	contextTimeout time.Duration
 }
 
 
-func NewUserUsecase(userRepo domain.IUserRepository, timeout time.Duration) domain.IUserUsecase {
+func NewUserUsecase(userRepo repo.IUserRepository, timeout time.Duration) uc.IUserUsecase {
 	return &UserUsecase{
 		userRepository: userRepo,
 		contextTimeout: timeout,
 	}
 }
 
-func (uc *UserUsecase) GetProfile(ctx context.Context, userID string) (*domain.User, error) {
+func (uc *UserUsecase) GetProfile(ctx context.Context, userID string) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, uc.contextTimeout)
 	defer cancel()
 
@@ -36,7 +40,7 @@ func (uc *UserUsecase) GetProfile(ctx context.Context, userID string) (*domain.U
 	return user, nil
 }
 
-func (uc *UserUsecase) UpdateProfile(ctx context.Context, user *domain.User) (*domain.User, error) {
+func (uc *UserUsecase) UpdateProfile(ctx context.Context, user *models.User) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, uc.contextTimeout)
 	defer cancel()
 
