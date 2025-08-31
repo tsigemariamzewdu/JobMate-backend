@@ -4,16 +4,19 @@ import (
 	"net/http"
 	"fmt"
 
-	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	
+	svc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
+	uc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/usecases"
+
 	"github.com/gin-gonic/gin"
 )
 
 type OAuth2Controller struct {
-	OAuthService domain.IOAuth2Service
-	AuthUsecase  domain.IAuthUsecase
+	OAuthService svc.IOAuth2Service
+	AuthUsecase  uc.IAuthUsecase
 }
 
-func NewOAuth2Controller(service domain.IOAuth2Service, authUsecase domain.IAuthUsecase) *OAuth2Controller {
+func NewOAuth2Controller(service svc.IOAuth2Service, authUsecase uc.IAuthUsecase) *OAuth2Controller {
 	return &OAuth2Controller{
 		OAuthService: service,
 		AuthUsecase:  authUsecase,
