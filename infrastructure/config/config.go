@@ -80,7 +80,7 @@ type Config struct {
 // If config.env is missing, it falls back to environment variables.
 func LoadConfig() (*Config, error) {
 	// Tell viper to look for "config.env" in the root folder
-	viper.AddConfigPath("../") 
+	viper.AddConfigPath(".") 
 	viper.SetConfigName("config")
 	viper.SetConfigType("env")
 	viper.AutomaticEnv()

@@ -1,7 +1,7 @@
 package infrastructure
 
 import ("gopkg.in/gomail.v2"
-	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	svc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
 )
 
 type ISMTPDialer interface {
@@ -13,7 +13,7 @@ type SMTPService struct {
 	EmailFrom string
 }
 
-func NewSMTPService(SMTPHost string, SMTPPort int, SMTPUsername string, SMTPPassword string, EmailFrom string)domain.IEmailService {
+func NewSMTPService(SMTPHost string, SMTPPort int, SMTPUsername string, SMTPPassword string, EmailFrom string)svc.IEmailService {
 	d := gomail.NewDialer(SMTPHost, SMTPPort, SMTPUsername, SMTPPassword)
 	return &SMTPService{
 		dialer:    d,
