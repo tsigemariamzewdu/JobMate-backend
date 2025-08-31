@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	service "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
+	svc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
 
 	model "github.com/tsigemariamzewdu/JobMate-backend/domain/models"
 	"google.golang.org/genai"
@@ -38,7 +38,7 @@ type GeminiAISuggestionService struct {
 	apiKey string
 }
 
-func NewGeminiAISuggestionService(model, apiKey string) service.AISuggestionService {
+func NewGeminiAISuggestionService(model, apiKey string) svc.AISuggestionService {
 	if model == "" {
 		model = "gemini-1.5-flash"
 	}

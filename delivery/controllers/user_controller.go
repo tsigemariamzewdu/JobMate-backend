@@ -5,14 +5,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tsigemariamzewdu/JobMate-backend/delivery/dto"
+	"github.com/tsigemariamzewdu/JobMate-backend/domain/models"
 	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	uc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/usecases"
 )
 
 type UserController struct {
-	userUsecase domain.IUserUsecase
+	userUsecase uc.IUserUsecase
 }
 
-func NewUserController(userUsecase domain.IUserUsecase) *UserController {
+func NewUserController(userUsecase uc.IUserUsecase) *UserController {
 	return &UserController{userUsecase: userUsecase}
 }
 
@@ -35,7 +37,7 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	user := &domain.User{
+	user := &models.User{
 		UserID:            userID,
 		FirstName:         req.FirstName,
 		LastName:          req.LastName,
@@ -60,7 +62,7 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	resp := dto.UserProfileResponse{
 		Success: true,
 		Message: "Profile updated successfully",
-		User:    dto.ToUserProfileView(updatedUser),
+		User:    dto.ToUserDTO(updatedUser),
 	}
 
 	ctx.JSON(http.StatusOK, resp)
@@ -95,7 +97,7 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 	resp := dto.UserProfileResponse{
 		Success: true,
 		Message: "User profile retrieved successfully",
-		User:    dto.ToUserProfileView(user),
+		User:    dto.ToUserDTO(user),
 	}
 
 	ctx.JSON(http.StatusOK, resp)

@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	svc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
+	"github.com/tsigemariamzewdu/JobMate-backend/domain/models"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -17,7 +18,7 @@ type googleProvider struct {
 }
 
 // creates a new Google OAuth2 provider
-func NewGoogleProvider(confg domain.OAuth2ProviderConfig) *googleProvider {
+func NewGoogleProvider(confg svc.OAuth2ProviderConfig) *googleProvider {
 	if len(confg.Scopes) == 0 {
 		confg.Scopes = []string{
 			"https://www.googleapis.com/auth/userinfo.email",
@@ -44,7 +45,7 @@ func (ggprov *googleProvider) GetAuthorizationURL(state string) string {
 	return ggprov.config.AuthCodeURL(state, oauth2.AccessTypeOffline)
 }
 
-func (ggprov *googleProvider) Authenticate(ctx context.Context, code string) (*domain.User, error) {
+func (ggprov *googleProvider) Authenticate(ctx context.Context, code string) (*models.User, error) {
 	
 	token, err := ggprov.config.Exchange(ctx, code)
 	if err != nil {
@@ -83,7 +84,7 @@ func (ggprov *googleProvider) Authenticate(ctx context.Context, code string) (*d
 		rawData = make(map[string]interface{})
 	}
 
-	return &domain.User{
+	return &models.User{
 		UserID:                userInfo.ID,
 		Email:                 userInfo.Email,
 		IsVerified:            userInfo.VerifiedEmail,

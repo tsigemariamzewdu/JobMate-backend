@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/tsigemariamzewdu/JobMate-backend/domain"
 	repo "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/repositories"
 	svc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
 	uc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/usecases"
@@ -37,10 +36,10 @@ type OTPUsecase struct {
     PhoneValidator uc.IPhoneValidator
     OTPSender      svc.IOTPSender
    
-    EmailService   domain.IEmailService
+    EmailService   svc.IEmailService
 }
 
-func NewOTPUsecase(repo repo.IOTPRepository, phonevalidator uc.IPhoneValidator, sender svc.IOTPSender,emailService domain.IEmailService) *OTPUsecase {
+func NewOTPUsecase(repo repo.IOTPRepository, phonevalidator uc.IPhoneValidator, sender svc.IOTPSender,emailService svc.IEmailService) *OTPUsecase {
     return &OTPUsecase{
         OTPRepo:       repo,
         PhoneValidator: phonevalidator,

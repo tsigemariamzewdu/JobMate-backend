@@ -5,23 +5,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	"github.com/tsigemariamzewdu/JobMate-backend/domain/models"
 	"github.com/tsigemariamzewdu/JobMate-backend/infrastructure/auth/providers"
+	svc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
 )
 
 type oauth2Service struct {
-	providers map[string]domain.IOAuth2Provider
+	providers map[string]svc.IOAuth2Provider
 }
 
 // creates a new OAuth2 service with the given providers
-func NewOAuth2Service(providerConfigs map[string]domain.OAuth2ProviderConfig) (domain.IOAuth2Service, error) {
+func NewOAuth2Service(providerConfigs map[string]svc.OAuth2ProviderConfig) (svc.IOAuth2Service, error) {
 	service := &oauth2Service{
-		providers: make(map[string]domain.IOAuth2Provider),
+		providers: make(map[string]svc.IOAuth2Provider),
 	}
 
 	for name, config := range providerConfigs {
 		
-		var provider domain.IOAuth2Provider
+		var provider svc.IOAuth2Provider
 		
 		switch name {
 		case "google":
@@ -54,7 +55,7 @@ func (o2serv *oauth2Service) GetAuthorizationURL(provider string, state string) 
 	return p.GetAuthorizationURL(state), nil
 }
 
-func (o2serv *oauth2Service) Authenticate(ctx context.Context, provider string, code string) (*domain.User, error) {
+func (o2serv *oauth2Service) Authenticate(ctx context.Context, provider string, code string) (*models.User, error) {
 	
 	p, ok := o2serv.providers[provider]
 	if !ok {

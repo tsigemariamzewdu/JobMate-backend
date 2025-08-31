@@ -9,21 +9,26 @@ import (
 	"unicode"
 
 	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	"github.com/tsigemariamzewdu/JobMate-backend/domain/models"
+
 	repo "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/repositories"
+	svc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
+	uc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/usecases"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthUsecase struct {
-	AuthRepo        domain.IAuthRepository
+	AuthRepo        repo.IAuthRepository
 	OTPRepo        repo.IOTPRepository      
-	PasswordService domain.IPasswordService
-	JWTService      domain.IJWTService
-	EmailService    domain.IEmailService
+	PasswordService svc.IPasswordService
+	JWTService      svc.IJWTService
+	EmailService    svc.IEmailService
 	BaseURL         string
 	ContextTimeout  time.Duration
 }
 
-func NewAuthUsecase(repo domain.IAuthRepository, ps domain.IPasswordService, jw domain.IJWTService, bs string,OTPRepo repo.IOTPRepository , timeout time.Duration) domain.IAuthUsecase {
+func NewAuthUsecase(repo repo.IAuthRepository, ps svc.IPasswordService, jw svc.IJWTService, bs string,OTPRepo repo.IOTPRepository , timeout time.Duration, emailService svc.IEmailService)uc.IAuthUsecase {
 	return &AuthUsecase{
 		AuthRepo:        repo,
 		PasswordService: ps,
@@ -31,13 +36,14 @@ func NewAuthUsecase(repo domain.IAuthRepository, ps domain.IPasswordService, jw 
 		BaseURL:         bs,
 		OTPRepo: OTPRepo,
 		ContextTimeout:  timeout,
+		EmailService:    emailService,
 	}
 }
 
 // register usecase
 
 // Register handles user registration, supporting both traditional and OAuth-based flows
-func (uc *AuthUsecase) Register(ctx context.Context, input *domain.User, oauthUser *domain.User) (*domain.User, error) {
+func (uc *AuthUsecase) Register(ctx context.Context, input *models.User, oauthUser *models.User) (*models.User, error) {
 
 	var email *string
 	if oauthUser != nil {
@@ -118,9 +124,9 @@ if oauthUser == nil {
 	}
 
 	// construct user model
-	newUser := domain.User{
-		FirstName: chooseNonEmpty(get(input, func(u *domain.User) *string { return u.FirstName }), get(oauthUser, func(u *domain.User) *string { return u.FirstName })),
-		LastName:  chooseNonEmpty(get(input, func(u *domain.User) *string { return u.LastName }), get(oauthUser, func(u *domain.User) *string { return u.LastName })),
+	newUser := models.User{
+		FirstName: chooseNonEmpty(get(input, func(u *models.User) *string { return u.FirstName }), get(oauthUser, func(u *models.User) *string { return u.FirstName })),
+		LastName:  chooseNonEmpty(get(input, func(u *models.User) *string { return u.LastName }), get(oauthUser, func(u *models.User) *string { return u.LastName })),
 
 		Email:          email,
 		IsVerified: true,
@@ -145,10 +151,10 @@ if oauthUser == nil {
 // login usecase
 
 // Login handles user login usecase
-func (uc *AuthUsecase) Login(ctx context.Context, input *domain.User) (*domain.LoginResult, error) {
+func (uc *AuthUsecase) Login(ctx context.Context, input *models.User) (*models.LoginResult, error) {
 
 	// find user by email 
-	var user *domain.User
+	var user *models.User
 	var err error
 
 	if validateEmail(*input.Email) {
@@ -164,8 +170,13 @@ func (uc *AuthUsecase) Login(ctx context.Context, input *domain.User) (*domain.L
 		return nil, fmt.Errorf("%w", domain.ErrOAuthUserCannotLoginWithPassword)
 	}
 
+	// Check if the user's email is verified
+	if !user.IsVerified {
+		return nil, fmt.Errorf("%w", domain.ErrEmailNotVerified)
+	}
+
 	// compare passwords
-	if user.Password == nil || !uc.PasswordService.ComparePassword(*user.Password, *input.Password) {
+	if user.PasswordHash == nil || !uc.PasswordService.ComparePassword(*user.PasswordHash, *input.Password) {
 		return nil, fmt.Errorf("%w", domain.ErrInvalidCredentials)
 	}
 
@@ -195,7 +206,7 @@ func (uc *AuthUsecase) Login(ctx context.Context, input *domain.User) (*domain.L
 	if err != nil {
 		return nil, err
 	}
-	result := domain.LoginResult{
+	result := models.LoginResult{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresIn:    expiresIn,
@@ -206,7 +217,7 @@ func (uc *AuthUsecase) Login(ctx context.Context, input *domain.User) (*domain.L
 }
 
 // OAuthLogin logs in or registers a user via an OAuth2 provider
-func (uc *AuthUsecase) OAuthLogin(ctx context.Context, oauthUser *domain.User) (*domain.LoginResult, error) {
+func (uc *AuthUsecase) OAuthLogin(ctx context.Context, oauthUser *models.User) (*models.LoginResult, error) {
 	ctx, cancel := context.WithTimeout(ctx, uc.ContextTimeout)
 	defer cancel()
 
@@ -259,7 +270,7 @@ func (uc *AuthUsecase) OAuthLogin(ctx context.Context, oauthUser *domain.User) (
 	user.RefreshToken = &refreshToken
 	user.UpdatedAt = time.Now()
 
-	return &domain.LoginResult{
+	return &models.LoginResult{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresIn:    expiresIn,
@@ -278,21 +289,21 @@ func chooseNonEmpty(primary *string, fallback *string) *string {
 	return nil
 }
 
-func get(u *domain.User, f func(*domain.User) *string) *string {
+func get(u *models.User, f func(*models.User) *string) *string {
 	if u == nil {
 		return nil
 	}
 	return f(u)
 }
 
-func oauthUserPicture(oauthUser *domain.User) *string {
+func oauthUserPicture(oauthUser *models.User) *string {
 	if oauthUser == nil || *oauthUser.ProfilePicture == "" {
 		return nil
 	}
 	return oauthUser.ProfilePicture
 }
 
-func oauthUserProvider(oauthUser *domain.User) string {
+func oauthUserProvider(oauthUser *models.User) string {
 	if oauthUser == nil {
 		return ""
 	}
@@ -334,7 +345,7 @@ func (uc *AuthUsecase) RefreshToken(ctx context.Context, incomingToken string) (
     }
 
     // Fetch user
-    user, err := uc.AuthRepo.FindByID(ctx, *storedToken.UserID)
+	user, err := uc.AuthRepo.FindByID(ctx, storedToken.UserID)
     if err != nil {
         return &emptyToken, 0, domain.ErrDatabaseOperationFailed
     }
@@ -393,5 +404,3 @@ func validatePasswordStrength(password string) bool {
 
 	return hasLetter && hasNumber
 }
-
-

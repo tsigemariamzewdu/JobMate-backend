@@ -8,15 +8,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	"github.com/tsigemariamzewdu/JobMate-backend/domain/models"
+	uc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/usecases"
 )
 
 // AuthController handles HTTP requests related to authentication.
 type AuthController struct {
-	AuthUsecase domain.IAuthUsecase
+	AuthUsecase uc .IAuthUsecase
 }
 
 // NewAuthController creates a new instance of AuthController with its dependencies.
-func NewAuthController(authUsecase domain.IAuthUsecase) *AuthController {
+func NewAuthController(authUsecase uc.IAuthUsecase) *AuthController {
 	return &AuthController{
 		AuthUsecase: authUsecase,
 	}
@@ -27,7 +29,7 @@ func (ac *AuthController) Register(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	var input domain.User
+	var input models.User
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload", "details": err.Error()})
 		return
@@ -75,7 +77,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	var loginUser domain.User
+	var loginUser models.User
 
 	// bind and validate input
 	if err := c.ShouldBindJSON(&loginUser); err != nil {
@@ -191,8 +193,6 @@ func (au *AuthController) RefreshToken(c *gin.Context) {
 	}
 
 	
-
-
 	// Return a success response to the client.
 	c.JSON(http.StatusOK, gin.H{
 		"message":    "Token refreshed successfully",

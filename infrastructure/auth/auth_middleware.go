@@ -5,14 +5,14 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	svc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
 )
 
 type AuthMiddleware struct {
-	JWTService domain.IJWTService
+	JWTService svc.IJWTService
 }
 
-func NewAuthMiddleware(jwtService domain.IJWTService) *AuthMiddleware {
+func NewAuthMiddleware(jwtService svc.IJWTService) *AuthMiddleware {
 	return &AuthMiddleware{JWTService: jwtService}
 }
 
