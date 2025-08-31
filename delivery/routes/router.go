@@ -34,7 +34,7 @@ func SetupRouter(authMiddleware *auth.AuthMiddleware,
 	RegisterOAuthRoutes(router, oauthController)
 
 	// Chat routes
-	chatRoutes := router.Group("/chat")
+	chatRoutes := router.Group("/chat", authMiddleware.Middleware())
 	{
 		chatRoutes.POST("", chatController.SendMessage)
 		chatRoutes.GET("/history", chatController.GetConversationHistory)
