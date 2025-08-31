@@ -1,13 +1,14 @@
 package auth
 
 import (
-	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	
 	"golang.org/x/crypto/bcrypt"
+	svc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
 )
 
 type PasswordService struct{}
 
-func NewPasswordService() domain.IPasswordService {
+func NewPasswordService() svc.IPasswordService {
 	return &PasswordService{}
 }
 

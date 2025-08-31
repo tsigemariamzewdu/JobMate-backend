@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/tsigemariamzewdu/JobMate-backend/domain"
+	
+	svc "github.com/tsigemariamzewdu/JobMate-backend/domain/interfaces/services"
 )
 
 // JWTService implements the domain.IJWTService interface.
@@ -14,7 +15,7 @@ type JWTService struct {
 	refreshSecret 	[]byte
 }
 
-func NewJWTService(accessSecret string, refreshSecret string) domain.IJWTService {
+func NewJWTService(accessSecret string, refreshSecret string) svc.IJWTService {
 	return &JWTService{
 		accessSecret: 	[]byte(accessSecret),
 		refreshSecret: 	[]byte(refreshSecret),
