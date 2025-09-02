@@ -86,10 +86,7 @@ func LoadConfig() (*Config, error) {
 	viper.AutomaticEnv()
 
 	// Read the config file
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
-	}
-
+	_ := viper.ReadInConfig()
 
 	// Now populate your config struct
 	cfg := &Config{
